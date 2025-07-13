@@ -13,21 +13,20 @@
     "testEnvironment": "node"
   },
   "scripts": {
-    "start": "NODE_ENV=production node index.js",
-    "dev": "NODE_ENV=development nodemon index.js",
-    "test": "NODE_ENV=test jest --runInBand --detectOpenHandles --forceExit",
-    "test:watch": "NODE_ENV=test jest --watch --detectOpenHandles",
-    "test:unit": "NODE_ENV=test jest tests/unit --detectOpenHandles",
-    "test:integration": "NODE_ENV=test jest tests/integration --runInBand --detectOpenHandles --forceExit",
-    "db:dev:migrate": "NODE_ENV=development npx prisma migrate dev",
-    "db:dev:seed": "NODE_ENV=development npx prisma db seed",
-    "db:test:migrate": "NODE_ENV=test npx prisma migrate deploy",
-    "db:test:reset": "NODE_ENV=test npx prisma migrate reset --force",
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --forceExit",
+    "test:watch": "cross-env NODE_ENV=test jest --watch --detectOpenHandles",
+    "test:unit": "cross-env NODE_ENV=test jest tests/unit --detectOpenHandles",
+    "test:integration": "cross-env NODE_ENV=test jest tests/integration --runInBand --detectOpenHandles --forceExit",
+    "db:dev:migrate": "cross-env NODE_ENV=development npx prisma migrate dev",
+    "db:dev:seed": "cross-env NODE_ENV=development npx prisma db seed",
+    "db:test:migrate": "cross-env NODE_ENV=test npx prisma migrate deploy",
+    "db:test:reset": "cross-env NODE_ENV=test npx prisma migrate reset --force",
     "db:generate": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -39,10 +38,10 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.7",
-    "nodemon": "^3.0.1"
+    "nodemailer": "^6.9.7"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
     "prisma": "^5.6.0",

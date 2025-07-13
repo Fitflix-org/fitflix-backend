@@ -5,11 +5,12 @@
 const authService = require('./auth.service'); // Import the service layer
 
 /**
- * Controller for user login.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Handles user login requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
  */
-async function login(req, res) {
+async function login(req, res, next) {
   const { email, password } = req.body;
 
   try {
@@ -30,26 +31,20 @@ async function login(req, res) {
       user: user // User object is already sanitized by the service
     });
   } catch (error) {
-    // Handle errors thrown by the service layer
-    if (error.message === 'Email and password are required.') {
-      return res.status(400).json({ message: error.message });
-    }
-    if (error.message === 'Invalid credentials.') {
-      return res.status(401).json({ message: error.message });
-    }
-    console.error('AuthController: Login error:', error);
-    return res.status(500).json({ message: 'Internal server error.' });
+    // Pass errors to the next middleware for centralized error handling
+    next(error);
   }
 }
 
 /**
- * Controller for user registration.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Handles user registration requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
  */
-async function register(req, res) {
+async function register(req, res, next) {
   // Extract username along with other fields from request body
-  const { email, password, username, first_name, last_name} = req.body;
+  const { email, password, username} = req.body;
 
   try {
     // Delegate to the service layer for business logic
@@ -57,9 +52,6 @@ async function register(req, res) {
       email,
       password,
       username, // Pass username to the service
-      first_name,
-      last_name,
-      
     });
 
     // Set HTTP-only cookie with the token
@@ -76,40 +68,29 @@ async function register(req, res) {
       user: user // User object is already sanitized by the service
     });
   } catch (error) {
-    // Handle errors thrown by the service layer
-    if (error.message === 'Required fields (email, password, username, first_name, last_name) are missing.') {
-      return res.status(400).json({ message: error.message });
-    }
-    if (error.message.includes('User with this email already exists.') ||
-        error.message.includes('Username already taken.')) {
-      return res.status(409).json({ message: error.message });
-    }
-    console.error('AuthController: Register error:', error);
-    return res.status(500).json({ message: 'Internal server error.' });
+    // Pass errors to the next middleware for centralized error handling
+    next(error);
   }
 }
 
 /**
- * Controller for user logout.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Handles user logout requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
  */
-async function logout(req, res) {
+async function logout(req, res, next) {
   try {
-    // Delegate to the service layer (though for JWT, it's mostly client-side)
-    await authService.logoutUser();
-
-    // Clear the HTTP-only cookie
+    // first, let your authenticate() have run, attached req.user
+    // then simply clear the cookie (optional) and return:
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict'
     });
-
     return res.status(200).json({ message: 'Logout successful.' });
   } catch (error) {
-    console.error('AuthController: Logout error:', error);
-    return res.status(500).json({ message: 'Internal server error.' });
+    next(error);
   }
 }
 

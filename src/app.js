@@ -8,10 +8,11 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors'); // Assuming you need CORS for frontend interaction
 
 // Import the main API router that aggregates all feature routes
-const apiRoutes = require('./routes/index');
+const apiRoutes = require('./index');
+
 
 // Import global middlewares
-const { auth } = require('./middlewares/auth.middleware'); // Your JWT verify middleware
+const { authenticate } = require('./middlewares/auth.middleware'); // Your JWT verify middleware
 const errorHandler = require('./middlewares/errorHandler'); // Centralized error handler (you'll create/update this)
 // const validationMiddleware = require('./middlewares/validation.middleware'); // If you implement a global validation middleware
 
@@ -23,8 +24,8 @@ const app = express();
 
 // Enable CORS for all origins (adjust as needed for production security)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // Replace with your frontend URL in production
-  credentials: true // Allow cookies to be sent
+  origin: 'http://localhost:8080',
+  credentials: true,
 }));
 
 // Parse JSON request bodies
@@ -42,6 +43,7 @@ app.use(cookieParser());
 
 // Mount the main API router under a '/api' prefix (common practice)
 app.use('/api', apiRoutes);
+
 
 // ---------------------------------------------------
 // Error Handling Middleware

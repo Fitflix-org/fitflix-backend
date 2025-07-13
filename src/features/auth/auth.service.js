@@ -63,16 +63,16 @@ async function loginUser(email, password) {
 
 /**
  * Handles the user registration business logic.
- * @param {object} userData - User data including email, password, username, first_name, last_name, and optional phone.
+ * @param {object} userData - User data including email, password, username.
  * @returns {Promise<{user: object, token: string, expiresInMs: number}>} Object containing sanitized new user, JWT, and token expiry.
  * @throws {Error} If required fields are missing, user already exists, or a server error occurs.
  */
 async function registerUser(userData) {
-  const { email, password, username, first_name, last_name } = userData;
+  const { email, password, username} = userData;
 
   // Validate required fields including username
-  if (!email || !password || !username || !first_name || !last_name) {
-    throw new Error('Required fields (email, password, username, first_name, last_name) are missing.');
+  if (!email || !password || !username) {
+    throw new Error('Required fields (email, password, username) are missing.');
   }
 
   try {
@@ -82,11 +82,8 @@ async function registerUser(userData) {
     const newUserPayload = {
       email,
       password_hash,
-      username, // Include username here
-      first_name,
-      last_name,
-      // Assign a default role for new registrations if not provided (e.g., 'user')
-      role: 'user' // Assuming 'user' is a default role for new registrations
+      username,
+      role: 'user' // Default role for new registrations
     };
 
     // 2. Create user in the database using the repository
@@ -128,6 +125,7 @@ async function logoutUser() {
   // For JWT, logout is primarily client-side (clearing the cookie/local storage).
   // No server-side database interaction needed for simple JWT invalidation.
   // If using refresh tokens or blacklisting, that logic would go here.
+  
   return { message: 'Logout successful.' };
 }
 

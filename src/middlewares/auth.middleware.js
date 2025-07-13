@@ -1,22 +1,37 @@
 // src/middlewares/auth.middleware.js
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET
+function authenticate(req, res, next) {
+  console.log('Authenticate middleware triggered');
+  // Try cookie first
+  let token = req.cookies?.token;
 
-const auth = (req, res, next) => {
-  // look in Authorization header:
-  const authHeader = req.header('Authorization') || req.header('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Fallback to Authorization header
+  const authHeader = req.header('Authorization') || '';
+  if (!token && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  }
+
+  if (!token) {
+    console.log('No token found, authorization denied.');
     return res.status(401).json({ message: 'No token, authorization denied' });
   }
 
-  const token = authHeader.split(' ')[1];
+  console.log('Token found:', token ? 'Yes' : 'No');
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.user || decoded;  // depending on how you sign
-    next();
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    console.log('Token decoded successfully. req.user:', req.user);
+    return next();
   } catch (err) {
+    console.error('⚠️ Token verification error:', err);
     return res.status(401).json({ message: 'Token is not valid' });
   }
-};
+}
+
+
+
 
 const authorizeFrontdesk = (req, res, next) => {
   console.log('Frontdesk authorization middleware triggered');
@@ -38,7 +53,7 @@ const authorizeFrontdesk = (req, res, next) => {
     }
 
     // Check if the user has the 'frontdesk' role
-    if (user.role !== 'frontdesk') {
+    if (user.role !== 'staff') {
       return res.status(403).send('Access Denied: Only frontdesk managers can access this resource.');
     }
 
@@ -57,4 +72,4 @@ const authorizeFrontdesk = (req, res, next) => {
   }
 };
 
-module.exports = { auth, authorizeFrontdesk };
+module.exports = { authenticate, authorizeFrontdesk };

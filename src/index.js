@@ -1,13 +1,14 @@
-// src/routes/index.js
+// src/index.js
 // This file aggregates all feature-specific routes and mounts them.
 
 const express = require('express');
 const router = express.Router();
 
 // Import feature routes
-const authRoutes = require('../features/auth/auth.routes');
+const authRoutes = require('./features/auth/auth.routes');
 // const userRoutes = require('../features/users/user.routes'); // Will be refactored later
-// const adminRoutes = require('./admin/index'); // Assuming admin routes are aggregated in admin/index.js
+const adminRoutes = require('./features/admin/admin.routes');
+const userProfileRoutes = require('./features/user_profile/user_profile.routes');
 // const frontdeskRoutes = require('./frontdesk/index'); // Assuming frontdesk routes are aggregated in frontdesk/index.js
 
 // ---------------------------------------------------
@@ -21,11 +22,12 @@ router.use('/auth', authRoutes);
 // router.use('/users', userRoutes);
 
 // Admin routes (e.g., /api/admin/gyms)
-// router.use('/admin', adminRoutes);
+router.use('/admin', adminRoutes);
 
 // Frontdesk routes (e.g., /api/frontdesk/checkins)
 // router.use('/frontdesk', frontdeskRoutes);
 
 // Add more feature routes here as you refactor them...
+router.use('/user-profile', userProfileRoutes);
 
 module.exports = router;

@@ -1,58 +1,79 @@
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
+// prisma/seed.js or scripts/seed.js
+
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
-  const password = 'Staff@123'; // Change or make configurable
-  const password_hash = await bcrypt.hash(password, 10);
-
-  const staffData = [
+  const gyms = [
     {
-      email: 'staff1@fitflix.com',
-      first_name: 'Ravi',
-      last_name: 'Sharma',
-      phone: '9876543210',
+      name: "Fitflix Gym - ITI Layout, Bangalore",
+      address:
+        "No. 294, 1st Floor, Above Bhagayalakshmi Super Market, 5th Main, 4th Cross Road, Iti Layout-560050, Bangalore",
+      latitude: "12.9423",
+      longitude: "77.5649",
+      phone_number: "+91 75103 82782",
+      email: "info@fitflix.in",
+      opening_time: "1970-01-01T06:00:00.000Z",
+      closing_time: "1970-01-01T22:00:00.000Z",
+      holiday_dates: [],
+      description:
+        "Fitflix Gym in ITI Layout, Bangalore is known for its commitment to helping members achieve their health and fitness goals. Offers Gym, Cardio, Crossfit, Strengthening Exercises, and Personal Trainers.",
     },
     {
-      email: 'staff2@fitflix.com',
-      first_name: 'Priya',
-      last_name: 'Mehta',
-      phone: '9123456789',
+      name: "Fitflix Gym - Electronic City Phase I, Bengaluru",
+      address:
+        "94, 3rd floor above Domino's, Opp- Ajmera Infinity, Neeladri Road, EC Phase, 1, Bengaluru, Karnataka 560100",
+      latitude: "12.8441",
+      longitude: "77.6675",
+      phone_number: "+91 75103 82782",
+      email: "info@fitflix.in",
+      opening_time: "1970-01-01T06:30:00.000Z",
+      closing_time: "1970-01-01T22:30:00.000Z",
+      holiday_dates: [],
+      description:
+        "Fitflix Gym Electronic City Phase I offers facilities like Parking, Personal Training, Group Classes, Free Trial, Shower, Nutritional Support, Locker room, Certified Trainers.",
     },
     {
-      email: 'staff3@fitflix.com',
-      first_name: 'Aman',
-      last_name: 'Verma',
-      phone: '9988776655',
+      name: "Fitflix Gym - Whitefield, Bengaluru",
+      address:
+        "2nd FLOOR, THULIP SPA, FITFLIX GYMS, ITPL Main Rd, opp. to SHERATON HOTEL, above HYDERABAD HOUSE, Bengaluru, Karnataka 560048",
+      latitude: "12.9728",
+      longitude: "77.7499",
+      phone_number: "+91 75103 82782",
+      email: "info@fitflix.in",
+      opening_time: "1970-01-01T05:00:00.000Z",
+      closing_time: "1970-01-01T22:30:00.000Z",
+      holiday_dates: [],
+      description:
+        "Fitflix Gym Whitefield offers various fitness options including Gym. Known for top-notch amenities and experienced professionals.",
+    },
+    {
+      name: "Fitflix Gym - Anna Nagar, Chennai",
+      address:
+        "FITFLIX GYM ANNANAGAR, Karuna conclave, 4th Ave, Shanthi Colony, Anna Nagar, Chennai, Tamil Nadu, 600040",
+      latitude: "13.0874",
+      longitude: "80.2171",
+      phone_number: "+91 75103 82782",
+      email: "info@fitflix.in",
+      opening_time: "1970-01-01T05:30:00.000Z",
+      closing_time: "1970-01-01T23:00:00.000Z",
+      holiday_dates: [],
+      description:
+        "Fitflix Gym Anna Nagar is a premium gym in Chennai, praised for its spaciousness, good equipment, ambiance, friendly trainers, and variety of classes.",
     },
   ];
 
-  for (const staff of staffData) {
-    const existingUser = await prisma.users.findUnique({
-      where: { email: staff.email },
-    });
-
-    if (!existingUser) {
-      await prisma.users.create({
-        data: {
-          email: staff.email,
-          password_hash,
-          first_name: staff.first_name,
-          last_name: staff.last_name,
-          phone: staff.phone,
-          role: 'staff',
-        },
-      });
-      console.log(`✅ Created staff: ${staff.email}`);
-    } else {
-      console.log(`ℹ️ Skipped (already exists): ${staff.email}`);
-    }
+  for (const gym of gyms) {
+    await prisma.gym.create({ data: gym });
   }
+
+  console.log("✅ Gyms seeded successfully.");
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding staff:', e);
+    console.error("❌ Seeding failed:", e);
+    process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
