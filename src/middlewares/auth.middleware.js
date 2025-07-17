@@ -2,7 +2,6 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET
 function authenticate(req, res, next) {
-  console.log('Authenticate middleware triggered');
   // Try cookie first
   let token = req.cookies?.token;
 
@@ -17,7 +16,6 @@ function authenticate(req, res, next) {
     return res.status(401).json({ message: 'No token, authorization denied' });
   }
 
-  console.log('Token found:', token ? 'Yes' : 'No');
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
