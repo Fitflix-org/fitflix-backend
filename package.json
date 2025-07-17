@@ -15,6 +15,10 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "build": "prisma generate && prisma migrate deploy",
+    "build:render": "npm install && prisma generate && prisma migrate deploy",
+    "build:full": "npm ci && prisma generate && prisma migrate deploy",
+    "postbuild": "echo 'Build completed successfully!'",
     "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --forceExit",
     "test:watch": "cross-env NODE_ENV=test jest --watch --detectOpenHandles",
     "test:unit": "cross-env NODE_ENV=test jest tests/unit --detectOpenHandles",
