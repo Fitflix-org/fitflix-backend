@@ -49,3 +49,7 @@ Thumbs.db
 *.log
 *.sqlite
 *.sqlite-journal
+.env
+.env.development
+.env.production
+.env.test
