@@ -1,58 +1,64 @@
-🔐 Authentication
-
-
-POST /auth/login – Login and receive JWT token
-
-
-
-👤 User Profile
-GET /user/profile
-
-PUT /user/profile – Update profile (e.g., weight, height, preferences)
-
-🏋️‍♂️ Gym Discovery
-GET /gyms – List gyms (basic info)
-
-GET /gyms/:id – Full gym details (info, services, amenities, staff)
-
-💳 Memberships
-GET /memberships/:gymId – View available memberships for a gym
-
-POST /user-memberships – Purchase/subscribe to a membership
-
-GET /user-memberships – View active/past user memberships
-
-🧑‍🏫 Trainers & PT
-GET /trainers/:gymId – List trainers in a gym
-
-POST /user-trainers – Assign a trainer and record payment
-
-🎯 Services & Activities
-GET /services/:gymId – Services offered by a gym
-
-GET /activities/:gymId – View activities
-
-📅 Events
-GET /events/:gymId – View upcoming events
-
-POST /event-bookings – Book an event
-
-GET /event-bookings – View your bookings
-
-POST /event-attendance/:eventId – Mark/check attendance (QR or manual)
-
-💸 Payments
-GET /payments – View all user payments
-
-GET /payments/:id – View specific payment details
-
-routes/user/
-  ├─ auth.routes.js
-  ├─ profile.routes.js
-  ├─ membership.routes.js
-  ├─ trainer.routes.js
-  ├─ gym.routes.js
-  ├─ service.routes.js
-  ├─ activity.routes.js
-  ├─ event.routes.js
-  └─ payment.routes.js
+fitflix-backend/
+├─ docs/
+├─ PostMan/
+├─ prisma/
+│  ├─ migrations/
+│  ├─ schema.prisma
+│  └─ seed.js
+├─ src/
+│  ├─ common/                  # Utilities, constants, common types/interfaces
+│  │  ├─ constants.js
+│  │  ├─ errors.js              # Custom error classes
+│  │  └─ helpers.js             # General utility functions (e.g., date formatting)
+│  ├─ features/                # Core business domains/features (e.g., Users, Gyms, Memberships)
+│  │  ├─ auth/
+│  │  │  ├─ auth.controller.js
+│  │  │  ├─ auth.routes.js
+│  │  │  ├─ auth.service.js     # New: Business logic for authentication
+│  │  │  └─ auth.repository.js  # New: Data access for auth-related entities (e.g., User)
+│  │  ├─ users/
+│  │  │  ├─ user.controller.js
+│  │  │  ├─ user.routes.js
+│  │  │  ├─ user.service.js     # New: Business logic for User (e.g., create user, get profile)
+│  │  │  └─ user.repository.js  # New: Data access for User entity via Prisma
+│  │  ├─ gyms/
+│  │  │  ├─ gym.controller.js
+│  │  │  ├─ gym.routes.js
+│  │  │  ├─ gym.service.js
+│  │  │  └─ gym.repository.js
+│  │  ├─ memberships/
+│  │  │  ├─ membership.controller.js
+│  │  │  ├─ membership.routes.js
+│  │  │  ├─ membership.service.js
+│  │  │  └─ membership.repository.js
+│  │  └─ ... (other domains like leads, staff, amenities, analytics, etc. each as a feature)
+│  ├─ middlewares/
+│  │  ├─ auth.middleware.js     # Remains here as a global middleware
+│  │  ├─ errorHandler.js        # Centralized error handling
+│  │  └─ validation.middleware.js # e.g., using Joi/Zod
+│  ├─ config/                  # Configuration files
+│  │  ├─ index.js
+│  │  └─ db.js                  # Prisma client instance setup
+│  ├─ app.js                   # Express app setup, global middlewares
+│  └─ server.js                # Entry point, starts the server
+├─ tests/
+│  ├─ unit/                    # For testing isolated components (services, repositories, utils)
+│  │  ├─ services/
+│  │  │  ├─ userService.test.js
+│  │  │  └─ gymService.test.js
+│  │  ├─ repositories/
+│  │  │  ├─ userRepository.test.js
+│  │  │  └─ gymRepository.test.js
+│  │  └─ common/
+│  │      └─ helpers.test.js
+│  ├─ integration/             # For testing interaction between components (controllers+services, routes)
+│  │  ├─ auth.integration.test.js
+│  │  ├─ user.integration.test.js
+│  │  └─ ...
+│  └─ setup.js
+├─ .env
+├─ .gitignore
+├─ index.js                     # This can potentially be merged into server.js
+├─ package-lock.json
+├─ package.json
+└─ Todo

@@ -1,31 +1,12 @@
-require('dotenv').config();
-const app = require('./src/app');
-const { PrismaClient } = require('@prisma/client');
+// index.js
+// This is the main entry point for the Fitflix backend application.
+// It imports the Express app and starts the server.
 
-const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3000;
+const app = require('./src/app'); // Import the Express app from src/app.js
 
-async function startServer() {
-  try {
-    // Test database connection
-    await prisma.$connect();
-    console.log('✅ Database connected successfully');
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📚 API Documentation: http://localhost:${PORT}/api/docs`);
-    });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  }
-}
+const PORT = process.env.PORT || 5000; // Use port from .env or default to 5000
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('🔄 Shutting down gracefully...');
-  await prisma.$disconnect();
-  process.exit(0);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`Access API at http://localhost:${PORT}/api`);
 });
-
-startServer();

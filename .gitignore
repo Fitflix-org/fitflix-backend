@@ -9,10 +9,12 @@ package-lock.json
 # Logs
 logs/
 *.log
-logs/*.log
 
 # Environment variables
 .env
+.env.development
+.env.test
+.env.production
 .env.local
 .env.*.local
 
@@ -37,3 +39,17 @@ jspm_packages/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Prisma generated client (usually in node_modules, but good to be explicit)
+# If you ever change the output path for Prisma Client, ensure it's ignored here
+# For example, if you output to `src/generated/prisma-client`, add that path.
+# By default, it's in node_modules/.prisma/client, which is covered by node_modules/
+
+# Local development specific files
+*.log
+*.sqlite
+*.sqlite-journal
+.env
+.env.development
+.env.production
+.env.test

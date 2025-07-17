@@ -7,325 +7,340 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model activities {
-  activity_id    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String           @unique @db.VarChar(100)
-  description    String?
-  created_at     DateTime         @default(now()) @db.Timestamptz(6)
-  is_deleted     Boolean          @default(false)
-  events         events[]
-  gym_activities gym_activities[]
-}
-
-model admins {
-  admin_id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username      String   @unique @db.VarChar(100)
-  password_hash String
-  role          String   @db.VarChar(50)
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-  is_deleted    Boolean  @default(false)
-}
-
-model amenities {
-  amenity_id    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String          @unique @db.VarChar(100)
-  icon_url      String?
-  created_at    DateTime        @default(now()) @db.Timestamptz(6)
-  is_deleted    Boolean         @default(false)
-  gym_amenities gym_amenities[]
-}
-
-model event_bookings {
-  booking_id        String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  event_id          String                  @db.Uuid
-  user_id           String                  @db.Uuid
-  booked_at         DateTime                @default(now()) @db.Timestamptz(6)
-  payment_id        String?                 @db.Uuid
-  attendance_status attendance_status_enum? @default(not_marked)
-  is_deleted        Boolean                 @default(false)
-  events            events                  @relation(fields: [event_id], references: [event_id], onDelete: Cascade, map: "fk_eb_event")
-  users             users                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_eb_user")
-  payments          payments?               @relation(fields: [payment_id], references: [payment_id], map: "fk_eventbooking_payment")
-
-  @@index([event_id], map: "idx_bookings_event")
-}
-
-model events {
-  event_id       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id         String           @db.Uuid
-  activity_id    String           @db.Uuid
-  name           String           @db.VarChar(150)
-  description    String?
-  event_date     DateTime         @db.Timestamptz(6)
-  status         String           @default("upcoming") @db.VarChar(20)
-  created_at     DateTime         @default(now()) @db.Timestamptz(6)
-  price_rupees   Int?
-  is_deleted     Boolean          @default(false)
-  event_bookings event_bookings[]
-  activities     activities       @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade, map: "fk_events_activity")
-  gyms           gyms             @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_events_gym")
-  payments       payments[]
-
-  @@index([gym_id], map: "idx_events_gym")
-}
-
-model gym_activities {
-  gym_id      String     @db.Uuid
-  activity_id String     @db.Uuid
-  activities  activities @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade, map: "fk_gyma_activity")
-  gyms        gyms       @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_gyma_gym")
-
-  @@id([gym_id, activity_id])
-  @@index([gym_id], map: "idx_gyma_gym")
-}
-
 model gym_amenities {
-  gym_id     String    @db.Uuid
-  amenity_id String    @db.Uuid
-  amenities  amenities @relation(fields: [amenity_id], references: [amenity_id], onDelete: Cascade, map: "fk_ga_amenity")
-  gyms       gyms      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_ga_gym")
-
-  @@id([gym_id, amenity_id])
-  @@index([gym_id], map: "idx_ga_gym")
-}
-
-model gym_info {
-  info_id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id          String   @db.Uuid
-  name            String   @db.VarChar(150)
-  address         String?
-  city            String?  @db.VarChar(100)
-  contact_number  String?  @db.VarChar(20)
-  opening_hours   String?  @db.VarChar(100)
-  latitude        Decimal? @db.Decimal(9, 6)
-  longitude       Decimal? @db.Decimal(9, 6)
-  google_maps_url String?
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  is_deleted      Boolean  @default(false)
-  gyms            gyms     @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_gym_info_gym")
-}
-
-model gym_services {
   gym_id     String   @db.Uuid
-  service_id String   @db.Uuid
-  gyms       gyms     @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_gs_gym")
-  services   services @relation(fields: [service_id], references: [service_id], onDelete: Cascade, map: "fk_gs_service")
-
-  @@id([gym_id, service_id])
-  @@index([gym_id], map: "idx_gs_gym")
-}
-
-model gym_types {
-  gym_type_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @unique @db.VarChar(50)
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  is_deleted  Boolean  @default(false)
-  gyms        gyms[]
-}
-
-model gyms {
-  gym_id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_type_id    String           @db.Uuid
-  created_at     DateTime         @default(now()) @db.Timestamptz(6)
-  is_deleted     Boolean          @default(false)
-  events         events[]
-  gym_activities gym_activities[]
-  gym_amenities  gym_amenities[]
-  gym_info       gym_info[]
-  gym_services   gym_services[]
-  gym_types      gym_types        @relation(fields: [gym_type_id], references: [gym_type_id], map: "fk_gym_type")
-  memberships    memberships[]
-  services       services[]
-  staff          staff[]
-}
-
-model memberships {
-  membership_id    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id           String                 @db.Uuid
-  name             String                 @db.VarChar(100)
-  description      String?
-  duration_days    Int
-  price_rupees     Int
-  status           membership_status_enum @default(active)
-  created_at       DateTime               @default(now()) @db.Timestamptz(6)
-  is_deleted       Boolean                @default(false)
-  gyms             gyms                   @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_membership_gym")
-  payments         payments[]
-  user_memberships user_memberships[]
-}
-
-model payments {
-  payment_id                                            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id                                               String              @db.Uuid
-  amount                                                Int
-  payment_date                                          DateTime            @default(now()) @db.Timestamptz(6)
-  status                                                payment_status_enum @default(pending)
-  method                                                String?             @db.VarChar(50)
-  staff_id                                              String?             @db.Uuid
-  notes                                                 String?
-  payment_for                                           payment_for_enum?   @default(other)
-  membership_id                                         String?             @db.Uuid
-  user_trainer_id                                       String?             @db.Uuid
-  service_id                                            String?             @db.Uuid
-  event_id                                              String?             @db.Uuid
-  is_deleted                                            Boolean             @default(false)
-  event_bookings                                        event_bookings[]
-  events                                                events?             @relation(fields: [event_id], references: [event_id], map: "fk_pay_event")
-  memberships                                           memberships?        @relation(fields: [membership_id], references: [membership_id], map: "fk_pay_membership")
-  services                                              services?           @relation(fields: [service_id], references: [service_id], map: "fk_pay_service")
-  users                                                 users               @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_pay_user")
-  user_trainers_payments_user_trainer_idTouser_trainers user_trainers?      @relation("payments_user_trainer_idTouser_trainers", fields: [user_trainer_id], references: [user_trainer_id], map: "fk_pay_user_trainer")
-  staff                                                 staff?              @relation(fields: [staff_id], references: [staff_id], map: "fk_payments_staff")
-  user_memberships                                      user_memberships[]
-  user_trainers_user_trainers_payment_idTopayments      user_trainers[]     @relation("user_trainers_payment_idTopayments")
-}
-
-model services {
-  service_id   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id       String         @db.Uuid
-  name         String         @db.VarChar(100)
-  description  String?
-  price_rupees Int
-  created_at   DateTime       @default(now()) @db.Timestamptz(6)
-  is_deleted   Boolean        @default(false)
-  gym_services gym_services[]
-  payments     payments[]
-  gyms         gyms           @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_services_gym")
+  amenity_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  icon_url   String?
+  name       String   @db.VarChar(100)
+  gyms       Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_ga_gym")
 
   @@unique([gym_id, name])
 }
 
-model staff {
-  staff_id      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id        String          @db.Uuid
-  name          String          @db.VarChar(100)
-  bio           String?
-  photo_url     String?
-  phone         String?         @db.VarChar(20)
-  email         String?         @db.VarChar(150)
-  created_at    DateTime        @default(now()) @db.Timestamptz(6)
-  is_deleted    Boolean         @default(false)
-  user_id       String          @unique @db.Uuid
-  staff_type    staff_type_enum @default(basic_staff)
-  payments      payments[]
-  gyms          gyms            @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_staff_gym")
-  users         users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_staff_user")
-  user_trainers user_trainers[]
-
-  @@index([gym_id], map: "idx_staff_gym")
+model payments {
+  payment_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String             @db.Uuid
+  amount           Decimal            @db.Decimal(10, 2)
+  payment_date     DateTime           @default(now()) @db.Timestamptz(6)
+  method           String?            @db.VarChar(50)
+  notes            String?
+  is_deleted       Boolean            @default(false)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  status           PaymentStatusEnum?
+  users            User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_pay_user")
+  user_memberships user_memberships[]
 }
 
 model user_memberships {
-  user_membership_id String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id            String                 @db.Uuid
-  membership_id      String                 @db.Uuid
-  start_date         DateTime               @default(dbgenerated("CURRENT_DATE")) @db.Date
-  end_date           DateTime?              @db.Date
-  payment_id         String?                @db.Uuid
-  created_at         DateTime               @default(now()) @db.Timestamptz(6)
-  status             membership_status_enum @default(tobestarted)
-  is_deleted         Boolean                @default(false)
-  memberships        memberships            @relation(fields: [membership_id], references: [membership_id], onDelete: Cascade, map: "fk_um_membership")
-  payments           payments?              @relation(fields: [payment_id], references: [payment_id], map: "fk_um_payment")
-  users              users                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_um_user")
+  user_membership_id   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String               @db.Uuid
+  start_date           DateTime             @db.Date
+  end_date             DateTime             @db.Date
+  payment_id           String?              @db.Uuid
+  created_at           DateTime             @default(now()) @db.Timestamptz(6)
+  is_deleted           Boolean              @default(false)
+  auto_renewal_enabled Boolean              @default(true)
+  digital_pass_code    String               @unique @db.VarChar(100)
+  is_active            Boolean              @default(true)
+  plan_id              String               @db.Uuid
+  updated_at           DateTime             @default(now()) @db.Timestamptz(6)
+  status               MembershipStatusEnum @default(not_started)
+  payments             payments?            @relation(fields: [payment_id], references: [payment_id], map: "fk_um_payment")
+  membership_plans     membership_plans     @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade)
+  users                User                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_um_user")
 }
 
 model user_profiles {
-  profile_id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id             String       @unique @db.Uuid
-  date_of_birth       DateTime?    @db.Date
-  gender              gender_enum?
-  address             String?      @db.VarChar(255)
-  city                String?      @db.VarChar(100)
-  state               String?      @db.VarChar(100)
-  zip_code            String?      @db.VarChar(20)
-  country             String?      @db.VarChar(100)
-  profile_picture_url String?      @db.VarChar(500)
-  height_cm           Decimal?     @db.Decimal(5, 2)
-  weight_kg           Decimal?     @db.Decimal(5, 2)
-  food_preferences    String[]     @default([])
-  lifestyle           Json?
-  created_at          DateTime     @default(now()) @db.Timestamptz(6)
-  is_deleted          Boolean      @default(false)
-  users               users        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_profile_user")
+  profile_id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String      @unique @db.Uuid
+  date_of_birth        DateTime?   @db.Date
+  height_cm            Decimal?    @db.Decimal(5, 2)
+  weight_kg            Decimal?    @db.Decimal(5, 2)
+  created_at           DateTime    @default(now()) @db.Timestamptz(6)
+  is_deleted           Boolean     @default(false)
+  profile_picture_url  String?
+  allergies            String[]
+  dietary_preferences  String[]
+  primary_fitness_goal String?     @db.VarChar(100)
+  updated_at           DateTime    @default(now()) @db.Timestamptz(6)
+  gender               GenderEnum?
+  users                User        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_profile_user")
 }
 
-model user_trainers {
-  user_trainer_id                                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id                                          String                 @db.Uuid
-  trainer_id                                       String                 @db.Uuid
-  payment_id                                       String?                @db.Uuid
-  rate_cents                                       Int
-  start_date                                       DateTime?              @db.Date
-  end_date                                         DateTime?              @db.Date
-  status                                           membership_status_enum @default(active)
-  created_at                                       DateTime               @default(now()) @db.Timestamptz(6)
-  is_deleted                                       Boolean                @default(false)
-  payments_payments_user_trainer_idTouser_trainers payments[]             @relation("payments_user_trainer_idTouser_trainers")
-  payments_user_trainers_payment_idTopayments      payments?              @relation("user_trainers_payment_idTopayments", fields: [payment_id], references: [payment_id], map: "fk_ut_payment")
-  staff                                            staff                  @relation(fields: [trainer_id], references: [staff_id], onDelete: Cascade, map: "fk_ut_trainer")
-  users                                            users                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_ut_user")
+model Gym {
+  gym_id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String                 @db.VarChar(255)
+  address              String
+  latitude             Decimal                @db.Decimal(10, 7)
+  longitude            Decimal                @db.Decimal(10, 7)
+  phone_number         String?                @db.VarChar(20)
+  email                String?                @db.VarChar(255)
+  opening_time         DateTime               @db.Time(6)
+  closing_time         DateTime               @db.Time(6)
+  holiday_dates        DateTime[]             @db.Date
+  description          String?
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  is_deleted           Boolean                @default(false)
+  gym_amenities        gym_amenities[]
+  gym_classes_services gym_classes_services[]
+  gym_media            gym_media[]
+  gym_trial_passes     gym_trial_passes[]
+  membership_plans     membership_plans[]
+  offers               offers[]
 }
 
-model users {
+model User {
   user_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email            String             @unique @db.VarChar(255)
   password_hash    String
-  first_name       String?            @db.VarChar(100)
-  last_name        String?            @db.VarChar(100)
-  phone            String?            @db.VarChar(20)
-  role             String             @default("member") @db.VarChar(50)
+  username         String             @unique @db.VarChar(100)
   created_at       DateTime           @default(now()) @db.Timestamptz(6)
   updated_at       DateTime           @default(now()) @db.Timestamptz(6)
   is_deleted       Boolean            @default(false)
-  event_bookings   event_bookings[]
+  role             UserRoleEnum       @default(user)
+  gym_trial_passes gym_trial_passes[]
+  hydration_logs   hydration_logs[]
+  meals            meals[]
+  notifications    notifications[]
   payments         payments[]
-  staff            staff?
+  user_goals       user_goals[]
   user_memberships user_memberships[]
   user_profiles    user_profiles?
-  user_trainers    user_trainers[]
+  workouts         workouts[]
 }
 
-enum attendance_status_enum {
-  not_marked
-  attended
-  missed
+enum UserRoleEnum {
+  user
+  admin
+  staff
 }
 
-enum gender_enum {
+model exercises {
+  exercise_id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String            @unique @db.VarChar(255)
+  type                  String?           @db.VarChar(50)
+  description           String?
+  primary_muscle_groups String[]
+  equipment_needed      String[]
+  created_at            DateTime          @default(now()) @db.Timestamptz(6)
+  workout_entries       workout_entries[]
+}
+
+model faqs {
+  faq_id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question    String
+  answer      String
+  category    String?  @db.VarChar(100)
+  order_index Int?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model food_items {
+  food_item_id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String         @unique @db.VarChar(255)
+  description          String?
+  calories_per_100g    Decimal        @db.Decimal(7, 2)
+  protein_per_100g     Decimal        @db.Decimal(7, 2)
+  carbs_per_100g       Decimal        @db.Decimal(7, 2)
+  fat_per_100g         Decimal        @db.Decimal(7, 2)
+  common_portions_json Json?
+  barcode              String?        @unique @db.VarChar(100)
+  is_custom            Boolean        @default(false)
+  created_at           DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime       @default(now()) @db.Timestamptz(6)
+  meal_entries         meal_entries[]
+}
+
+model gym_classes_services {
+  class_service_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id           String   @db.Uuid
+  name             String   @db.VarChar(255)
+  description      String?
+  duration_minutes Int?
+  price            Decimal? @db.Decimal(10, 2)
+  is_class         Boolean  @default(true)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  Gym              Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
+}
+
+model gym_media {
+  media_id     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id       String   @db.Uuid
+  url          String
+  media_type   String   @db.VarChar(50)
+  is_thumbnail Boolean  @default(false)
+  order_index  Int?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  Gym          Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
+}
+
+model gym_trial_passes {
+  pass_id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String   @db.Uuid
+  gym_id            String   @db.Uuid
+  issued_date       DateTime @default(now()) @db.Date
+  expiry_date       DateTime @db.Date
+  is_used           Boolean  @default(false)
+  digital_pass_code String   @unique @db.VarChar(100)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @db.Timestamptz(6)
+  Gym               Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
+  User              User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model hydration_logs {
+  log_id     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  log_date   DateTime @db.Date
+  amount_ml  Int
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  User       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model meal_entries {
+  entry_id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meal_id           String     @db.Uuid
+  food_item_id      String     @db.Uuid
+  quantity          Decimal    @db.Decimal(7, 2)
+  unit              String     @db.VarChar(50)
+  calories_consumed Decimal?   @db.Decimal(7, 2)
+  protein_g         Decimal?   @db.Decimal(7, 2)
+  carbs_g           Decimal?   @db.Decimal(7, 2)
+  fat_g             Decimal?   @db.Decimal(7, 2)
+  created_at        DateTime   @default(now()) @db.Timestamptz(6)
+  food_items        food_items @relation(fields: [food_item_id], references: [food_item_id], onDelete: Cascade)
+  meals             meals      @relation(fields: [meal_id], references: [meal_id], onDelete: Cascade)
+}
+
+model meals {
+  meal_id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String         @db.Uuid
+  meal_date       DateTime       @db.Date
+  meal_time       DateTime       @db.Time(6)
+  meal_type       String         @db.VarChar(50)
+  notes           String?
+  total_calories  Decimal?       @db.Decimal(7, 2)
+  total_protein_g Decimal?       @db.Decimal(7, 2)
+  total_carbs_g   Decimal?       @db.Decimal(7, 2)
+  total_fat_g     Decimal?       @db.Decimal(7, 2)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  meal_entries    meal_entries[]
+  User            User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model membership_plans {
+  plan_id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id               String             @db.Uuid
+  name                 String             @db.VarChar(255)
+  duration_months      Int
+  price                Decimal            @db.Decimal(10, 2)
+  description          String?
+  terms_conditions_url String?
+  created_at           DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime           @default(now()) @db.Timestamptz(6)
+  is_deleted           Boolean            @default(false)
+  Gym                  Gym                @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
+  user_memberships     user_memberships[]
+}
+
+model notifications {
+  notification_id String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String                @db.Uuid
+  type            NotificationTypeEnum?
+  title           String                @db.VarChar(255)
+  message         String
+  related_id      String?               @db.Uuid
+  is_read         Boolean               @default(false)
+  sent_at         DateTime              @default(now()) @db.Timestamptz(6)
+  User            User                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model offers {
+  offer_id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                 String   @db.VarChar(255)
+  description           String?
+  discount_percentage   Decimal? @db.Decimal(5, 2)
+  fixed_discount_amount Decimal? @db.Decimal(10, 2)
+  start_date            DateTime @db.Date
+  end_date              DateTime @db.Date
+  target_gym_id         String?  @db.Uuid
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime @default(now()) @db.Timestamptz(6)
+  Gym                   Gym?     @relation(fields: [target_gym_id], references: [gym_id])
+}
+
+model user_goals {
+  goal_id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String    @db.Uuid
+  goal_type     String    @db.VarChar(100)
+  target_value  Decimal   @db.Decimal(10, 2)
+  current_value Decimal   @default(0.0) @db.Decimal(10, 2)
+  unit          String?   @db.VarChar(50)
+  start_date    DateTime  @default(now()) @db.Date
+  end_date      DateTime? @db.Date
+  is_completed  Boolean   @default(false)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+  User          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model workout_entries {
+  entry_id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workout_id       String    @db.Uuid
+  exercise_id      String    @db.Uuid
+  sets             Int?
+  reps             Int?
+  weight_kg        Decimal?  @db.Decimal(7, 2)
+  duration_minutes Int?
+  distance_km      Decimal?  @db.Decimal(7, 2)
+  notes            String?
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  exercises        exercises @relation(fields: [exercise_id], references: [exercise_id], onDelete: Cascade)
+  workouts         workouts  @relation(fields: [workout_id], references: [workout_id], onDelete: Cascade)
+}
+
+model workouts {
+  workout_id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String            @db.Uuid
+  workout_date          DateTime          @db.Date
+  duration_minutes      Int
+  total_calories_burned Decimal?          @db.Decimal(7, 2)
+  notes                 String?
+  created_at            DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime          @default(now()) @db.Timestamptz(6)
+  workout_entries       workout_entries[]
+  User                  User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+enum GenderEnum {
   male
   female
   other
 }
 
-enum membership_status_enum {
+enum MembershipStatusEnum {
   not_started
   active
-  started
   ended
   expired
   cancelled
-  tobestarted
 }
 
-enum payment_for_enum {
-  membership
-  personal_training
-  service
-  event
-  other
+enum NotificationTypeEnum {
+  offer
+  gym_announcement
+  workout_reminder
+  hydration_reminder
+  membership_renewal
 }
 
-enum payment_status_enum {
+enum PaymentStatusEnum {
   success
   pending
   failed
   refunded
-}
-
-enum staff_type_enum {
-  manager
-  housekeeping
-  basic_staff
-  trainer
 }

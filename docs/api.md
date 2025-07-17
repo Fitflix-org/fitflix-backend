@@ -1,240 +1,183 @@
-```markdown
-# Fitflix Backend API Documentation
+Fitflix Backend API Reference: Authentication
+This document outlines the API endpoints for user authentication within the Fitflix backend. These endpoints allow users to register, log in, and log out, managing their session via HTTP-only cookies.
 
-### Base URL
+Base URL: /api/auth
 
-`https://fitflix-backend-rym0.onrender.com/api`
+1. Register User
+Registers a new user account.
 
----
+Endpoint: /register
 
-## Authentication
+Method: POST
 
-All endpoints under `/admin`, `/user`, and other protected modules require a valid JWT in the `Authorization` header:
+Description: Creates a new user entry in the database. Upon successful registration, a JWT is issued and set as an HTTP-only cookie.
 
-```
+Access: Public
 
-Authorization: Bearer \<your\_jwt\_token>
+Request
+Headers:
 
-````
+Content-Type: application/json
 
----
+Body (JSON):
 
-## 1. Admin Module
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!",
+  "first_name": "John",
+  "last_name": "Doe",
+}
 
-### 1.1 Gym Management
+Body Fields:
 
-- **Create Gym**  
-  `POST /admin/gyms`  
-  **Body**
+email (string, required): Unique email address for the user.
 
-  ```json
-  {
-    "name": "Fitflix Downtown",
-    "address": "123 Main St, Hyderabad, India",
-    "phone_number": "+91-9876543210",
-    "email": "downtown@fitflix.com",
-    "open_time": "2025-06-01T06:00:00Z",
-    "close_time": "2025-06-01T22:00:00Z"
-  }
-````
+password (string, required): User's chosen password. Will be hashed before storage.
 
-* **Get All Gyms**
-  `GET /admin/gyms`
+first_name (string, required): User's first name.
 
-* **Get Gym By ID**
-  `GET /admin/gyms/:gymId`
+last_name (string, required): User's last name.
 
-* **Update Gym**
-  `PUT /admin/gyms/:gymId`
 
-* **Delete Gym**
-  `DELETE /admin/gyms/:gymId`
+Response
+Status: 201 Created
 
----
+Body (JSON):
 
-### 1.2 Staff Management
-
-* **Create Staff**
-  `POST /admin/staff`
-  **Body**
-
-  ```json
-  {
-    "email": "jane.smith@example.com",
-    "password": "StrongPass!23",
-    "first_name": "Jane",
-    "last_name": "Smith",
-    "phone": "+91-9000000000",
-    "user_profile": { /* profile fields */ },
-    "name": "Jane Smith",
-    "staff_type": "manager",
-    "bio": "Expert fitness manager",
-    "photo_url": "https://...",
-    "gym_id": "373cc6e5-42d1-4eb3-882d-d0a2fec10194"
-  }
-  ```
-
-* **Get All Staff**
-  `GET /admin/staff`
-
-* **Get Staff By ID**
-  `GET /admin/staff/:staffId`
-
-* **Update Staff**
-  `PUT /admin/staff/:staffId`
-
-* **Delete Staff**
-  `DELETE /admin/staff/:staffId`
-
----
-
-### 1.3 Membership Type Management (Global Templates)
-
-* **Create Membership Type**
-  `POST /admin/membership-types`
-  **Body**
-
-  ```json
-  {
-    "name": "Standard Plan",
-    "description": "Includes all group classes",
-    "price": 4999,
-    "duration_months": 1
-  }
-  ```
-
-* **Get All Membership Types**
-  `GET /admin/membership-types`
-
-* **Get Membership Type By ID**
-  `GET /admin/membership-types/:typeId`
-
-* **Update Membership Type**
-  `PUT /admin/membership-types/:typeId`
-
-* **Delete Membership Type**
-  `DELETE /admin/membership-types/:typeId`
-
----
-
-### 1.4 Memberships by Gym
-
-* **Create Membership for a Gym**
-  `POST /admin/gyms/:gymId/memberships`
-  **Body**
-
-  ```json
-  {
-    "name": "Gold Membership",
-    "description": "Access to all equipment and classes",
-    "price_rupees": 2500,
-    "duration_days": 30
-  }
-  ```
-
-* **Get All Memberships for a Gym**
-  `GET /admin/gyms/:gymId/memberships`
-
-* **Get Specific Membership by ID**
-  `GET /admin/gyms/:gymId/memberships/:membershipId`
-
-* **Update Membership for a Gym**
-  `PUT /admin/gyms/:gymId/memberships/:membershipId`
-  **Body** (any of the create fields + `status`)
-
-* **Soft Delete Membership**
-  `DELETE /admin/gyms/:gymId/memberships/:membershipId`
-
----
-
-### 1.5 Analytics
-
-* **Total Users**
-  `GET /admin/analytics/total-users`
-
-* **Total Revenue**
-  `GET /admin/analytics/total-revenue`
-
-* **Total Check-ins**
-  `GET /admin/analytics/total-checkins`
-
----
-
-## 2. Authentication Module
-
-* **Login**
-  `POST /auth/login`
-  **Body**
-
-  ```json
-  {
-    "email": "john.doe@example.com",
-    "password": "SecurePass123"
-  }
-  ```
-
----
-
-## 3. User Module
-
-### 3.1 User Profile
-
-* **Get Profile**
-  `GET /user/profile`
-
-* **Update Profile**
-  `PUT /user/profile`
-  **Body**
-
-  ```json
-  {
+{
+  "message": "User registered successfully.",
+  "user": {
+    "user_id": "uuid-of-new-user",
+    "email": "user@example.com",
     "first_name": "John",
     "last_name": "Doe",
-    "date_of_birth": "1990-05-15",
-    "gender": "male",
-    "address": "123 Elm Street",
-    "phone_number": "+91-9123456780",
-    "emergency_contact_name": "Jane Doe",
-    "emergency_contact_number": "+91-9988776655",
-    "medical_conditions": "none",
-    "goals": "muscle gain",
-    "lifestyle": "active",
-    "food_preferences": "vegetarian"
+    "role": "user" // Default role assigned
   }
-  ```
+}
 
----
+Status: 400 Bad Request
 
-## 4. Gym Types Module
+Body (JSON):
 
-* **Create Gym Type**
-  `POST /admin/gym-types`
-  **Body**
+{
+  "message": "Required fields are missing."
+}
 
-  ```json
-  { "name": "Premium" }
-  ```
+Status: 409 Conflict
 
-* **Get All Gym Types**
-  `GET /admin/gym-types`
+Body (JSON):
 
-* **Get Gym Type By ID**
-  `GET /admin/gym-types/:typeId`
+{
+  "message": "User with this email already exists."
+}
 
-* **Update Gym Type**
-  `PUT /admin/gym-types/:typeId`
-  **Body**
+Status: 500 Internal Server Error
 
-  ```json
-  { "name": "Standard" }
-  ```
+Body (JSON):
 
-* **Delete Gym Type**
-  `DELETE /admin/gym-types/:typeId`
+{
+  "message": "Internal server error."
+}
 
----
+2. Login User
+Authenticates an existing user.
 
-*End of `api.md`.*
+Endpoint: /login
 
-```
+Method: POST
 
+Description: Verifies user credentials. On successful authentication, a JWT is issued and set as an HTTP-only cookie.
+
+Access: Public
+
+Request
+Headers:
+
+Content-Type: application/json
+
+Body (JSON):
+
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+
+Body Fields:
+
+email (string, required): User's email address.
+
+password (string, required): User's password.
+
+Response
+Status: 200 OK
+
+Body (JSON):
+
+{
+  "message": "Login successful.",
+  "user": {
+    "user_id": "uuid-of-logged-in-user",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "role": "user",
+    "user_profiles": { /* profile data */ } // Includes associated user profile data
+  }
+}
+
+Status: 400 Bad Request
+
+Body (JSON):
+
+{
+  "message": "Email and password are required."
+}
+
+Status: 401 Unauthorized
+
+Body (JSON):
+
+{
+  "message": "Invalid credentials."
+}
+
+Status: 500 Internal Server Error
+
+Body (JSON):
+
+{
+  "message": "Internal server error."
+}
+
+3. Logout User
+Logs out the current user.
+
+Endpoint: /logout
+
+Method: POST
+
+Description: Clears the HTTP-only authentication cookie from the client's browser, effectively ending the session.
+
+Access: Public (no token needed to initiate logout, but it acts on the client's cookie)
+
+Request
+Headers: None required (cookie is sent automatically by browser).
+
+Body: None.
+
+Response
+Status: 200 OK
+
+Body (JSON):
+
+{
+  "message": "Logout successful."
+}
+
+Status: 500 Internal Server Error
+
+Body (JSON):
+
+{
+  "message": "Internal server error."
+}
