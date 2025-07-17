@@ -13,7 +13,7 @@
     "testEnvironment": "node"
   },
   "scripts": {
-    "start": "cross-env NODE_ENV=production node index.js",
+    "start": "NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development nodemon index.js",
     "build": "prisma generate && prisma migrate deploy",
     "build:render": "npm install && prisma generate && prisma migrate deploy",
@@ -34,7 +34,6 @@
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "cross-env": "^7.0.3",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
