@@ -9,7 +9,6 @@ const router = express.Router();
  */
 const adminController = require('./admin.controller');
 const gymRoutes = require('./gym.routes');
-const { authenticate } = require('../../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -36,7 +35,7 @@ const { authenticate } = require('../../middlewares/auth.middleware');
  *       500:
  *         description: Internal server error
  */
-router.get('/users', authenticate, adminController.getAllUsers);
+router.get('/users',  adminController.getAllUsers);
 
 // Mount gym routes under /admin/gyms
 router.use('/gyms', gymRoutes);
