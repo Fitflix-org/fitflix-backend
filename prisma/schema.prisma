@@ -22,36 +22,26 @@ model Gym {
   created_at           DateTime               @default(now()) @db.Timestamptz(6)
   updated_at           DateTime               @default(now()) @db.Timestamptz(6)
   is_deleted           Boolean                @default(false)
-  amenities            gym_amenities[]
+  gym_amenities        gym_amenities[]
   gym_classes_services gym_classes_services[]
   gym_media            gym_media[]
   gym_trial_passes     gym_trial_passes[]
   membership_plans     membership_plans[]
   offers               offers[]
-  @@map("gym")
-}
 
-model amenity {
-  amenity_id   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String           @db.VarChar(100)
-  icon_url     String?
-  created_at   DateTime         @default(now()) @db.Timestamptz(6)
-  gyms         gym_amenities[]
-
-  @@map("amenity")
+  @@map("gyms")
 }
 
 model gym_amenities {
-  gym_id     String   @db.Uuid
-  amenity_id String   @db.Uuid
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  gym        Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
-  amenity    Amenity  @relation(fields: [amenity_id], references: [amenity_id], onDelete: Cascade)
+  gym_id     String    @db.Uuid
+  amenity_id String    @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  amenity    amenities @relation(fields: [amenity_id], references: [amenity_id], onDelete: Cascade)
+  gym        Gym       @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
 
   @@id([gym_id, amenity_id])
   @@map("gym_amenities")
 }
-
 
 model payments {
   payment_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -82,16 +72,14 @@ model user_memberships {
   updated_at           DateTime             @default(now()) @db.Timestamptz(6)
   status               MembershipStatusEnum @default(not_started)
   payments             payments?            @relation(fields: [payment_id], references: [payment_id], map: "fk_um_payment")
-  membership_plans     membership_plans     @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade)
   users                User                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_um_user")
+  membership_plans     membership_plans     @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade)
 }
 
 model user_profiles {
   profile_id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id              String      @unique @db.Uuid
   date_of_birth        DateTime?   @db.Date
-  first_name           String      @default("")
-  last_name            String      @default("")  
   height_cm            Decimal?    @db.Decimal(5, 2)
   weight_kg            Decimal?    @db.Decimal(5, 2)
   created_at           DateTime    @default(now()) @db.Timestamptz(6)
@@ -102,6 +90,8 @@ model user_profiles {
   primary_fitness_goal String?     @db.VarChar(100)
   updated_at           DateTime    @default(now()) @db.Timestamptz(6)
   gender               GenderEnum?
+  first_name           String      @default("")
+  last_name            String      @default("")
   users                User        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_profile_user")
 }
 
@@ -123,12 +113,6 @@ model User {
   user_memberships user_memberships[]
   user_profiles    user_profiles?
   workouts         workouts[]
-}
-
-enum UserRoleEnum {
-  user
-  admin
-  staff
 }
 
 model exercises {
@@ -328,6 +312,20 @@ model workouts {
   updated_at            DateTime          @default(now()) @db.Timestamptz(6)
   workout_entries       workout_entries[]
   User                  User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model amenities {
+  amenity_id String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String          @db.VarChar(100)
+  icon_url   String?
+  created_at DateTime        @default(now()) @db.Timestamptz(6)
+  
+}
+
+enum UserRoleEnum {
+  user
+  admin
+  staff
 }
 
 enum GenderEnum {
