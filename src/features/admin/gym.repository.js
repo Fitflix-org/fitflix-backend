@@ -39,14 +39,14 @@ async function createGym(gymData, amenityIds = []) {
 }
 
 async function updateGym(id, gymData) {
-    return await prisma.gyms.update({
+    return await prisma.gym.update({
         where: { gym_id: id },
         data: gymData,
     });
 }
 
 async function getAllGyms() {
-    return await prisma.gyms.findMany({
+    return await prisma.gym.findMany({
         include: {
             gym_amenities: true
         }
@@ -54,7 +54,7 @@ async function getAllGyms() {
 }
 
 async function getGymById(id) {
-    return await prisma.gyms.findUnique({
+    return await prisma.gym.findUnique({
         where: { gym_id: id },
         include: {
             gym_amenities: {
@@ -67,7 +67,7 @@ async function getGymById(id) {
 }
 
 async function getAllGyms() {
-    return await prisma.gyms.findMany({
+    return await prisma.gym.findMany({
         include: {
             gym_amenities: {
                 include: {

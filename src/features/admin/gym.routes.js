@@ -4,7 +4,7 @@ const gymController = require("./gym.controller");
 const { authenticate } = require("../../middlewares/auth.middleware");
 
 // Create a new gym
-router.post("/", authenticate, gymController.createGym);
+router.post("/", gymController.createGym);
 
 // Update a gym by ID
 router.put("/:id", authenticate, gymController.updateGym);
