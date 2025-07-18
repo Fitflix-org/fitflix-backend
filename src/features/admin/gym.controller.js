@@ -60,39 +60,40 @@ const gymService = require('./gym.service');
  *       403:
  *         description: Forbidden
  */
-
-
-
-
 async function createGym(req, res, next) {
     try {
-        // 1. Separate the amenities array from the rest of the gym data
-        const { amenities, ...gymData } = req.body;
+        const gymData = { ...req.body };
 
-        // 2. Convert time strings to Date objects (your existing logic is correct)
-        if (gymData.opening_time && typeof gymData.opening_time === 'string') {
-            gymData.opening_time = new Date(gymData.opening_time);
-        }
-        if (gymData.closing_time && typeof gymData.closing_time === 'string') {
-            gymData.closing_time = new Date(gymData.closing_time);
-        }
-        if (gymData.holiday_dates && Array.isArray(gymData.holiday_dates)) {
-            gymData.holiday_dates = gymData.holiday_dates.map(date => new Date(date));
-        }
+        if (gymData.holiday_dates) {
+             gymData.holiday_dates = gymData.holiday_dates.map(date => new Date(date));
+         }
         
-        // 3. Pass both the gym data and the amenities array to the service
-        const newGym = await gymService.createGym(gymData, amenities);
+        if (gymData.opening_time && typeof gymData.opening_time === 'string') {
+                let time = gymData.opening_time;
+                const parts = time.split(':');
+                if (parts.length === 2) {
+                    time += ':00';
+                } else if (parts.length === 1) {
+                    time += ':00:00';
+                }
+                gymData.opening_time = new Date(`1970-01-01T${time}Z`);
+            }
+        if (gymData.closing_time && typeof gymData.closing_time === 'string') {
+                let time = gymData.closing_time;
+                const parts = time.split(':');
+                if (parts.length === 2) {
+                    time += ':00';
+                } else if (parts.length === 1) {
+                    time += ':00:00';
+                }
+                gymData.closing_time = new Date(`1970-01-01T${time}Z`);
+            }
+        const newGym = await gymService.createGym(gymData);
         res.status(201).json(newGym);
     } catch (error) {
-        if (error.name === 'PrismaClientValidationError') {
-            console.error("Prisma Validation Error:", error.message);
-        }
         next(error);
     }
 }
-
-module.exports = { createGym };
-
 
 /**
  * @swagger
@@ -166,14 +167,26 @@ async function updateGym(req, res, next) {
         }
 
         if (gymData.opening_time && typeof gymData.opening_time === 'string') {
-            gymData.opening_time = formatTimeString(gymData.opening_time);
-        }
-
+                let time = gymData.opening_time;
+                const parts = time.split(':');
+                if (parts.length === 2) {
+                    time += ':00';
+                } else if (parts.length === 1) {
+                    time += ':00:00';
+                }
+                gymData.opening_time = new Date(`1970-01-01T${time}Z`);
+            }
         if (gymData.closing_time && typeof gymData.closing_time === 'string') {
-            gymData.closing_time = formatTimeString(gymData.closing_time);
-        }
-
-        const updatedGym = await gymService.updateGym(id, gymData, amenities || []);
+                let time = gymData.closing_time;
+                const parts = time.split(':');
+                if (parts.length === 2) {
+                    time += ':00';
+                } else if (parts.length === 1) {
+                    time += ':00:00';
+                }
+                gymData.closing_time = new Date(`1970-01-01T${time}Z`);
+            }
+        const updatedGym = await gymService.updateGym(id, gymData);
         res.status(200).json(updatedGym);
     } catch (error) {
         next(error);

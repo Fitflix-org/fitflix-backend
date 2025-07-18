@@ -9,7 +9,6 @@ const router = express.Router();
  */
 const adminController = require('./admin.controller');
 const gymRoutes = require('./gym.routes');
-const { authenticate } = require('../../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -38,13 +37,7 @@ const { authenticate } = require('../../middlewares/auth.middleware');
  */
 router.get('/users',  adminController.getAllUsers);
 
-router.get('/all-gyms', adminController.getAllGyms);
-
 // Mount gym routes under /admin/gyms
 router.use('/gyms', gymRoutes);
-
-router.use('/amenity', adminController.createAmenities);
-
-router.get('/amenity-id', adminController.getAllamenitiesId);
 
 module.exports = router;
