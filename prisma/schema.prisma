@@ -28,7 +28,7 @@ model Gym {
   gym_trial_passes     gym_trial_passes[]
   membership_plans     membership_plans[]
   offers               offers[]
-  @@map("gym")
+  @@map("gyms")
 }
 
 model amenity {
@@ -38,7 +38,7 @@ model amenity {
   created_at   DateTime         @default(now()) @db.Timestamptz(6)
   gyms         gym_amenities[]
 
-  @@map("amenity")
+  @@map("amenities")
 }
 
 model gym_amenities {
@@ -46,7 +46,7 @@ model gym_amenities {
   amenity_id String   @db.Uuid
   created_at DateTime @default(now()) @db.Timestamptz(6)
   gym        Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
-  amenity    Amenity  @relation(fields: [amenity_id], references: [amenity_id], onDelete: Cascade)
+  amenity    amenity  @relation(fields: [amenity_id], references: [amenity_id], onDelete: Cascade)
 
   @@id([gym_id, amenity_id])
   @@map("gym_amenities")
