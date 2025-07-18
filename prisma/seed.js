@@ -78,3 +78,75 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const { PrismaClient } = require("@prisma/client");
+// const prisma = new PrismaClient();
+
+// async function main() {
+//   const gyms = [
+//     {
+//       name: "Fitflix Gym - ITI Layout, Bangalore",
+//       address: "No. 294, 1st Floor, Above Bhagayalakshmi Super Market, 5th Main, 4th Cross Road, Iti Layout-560050, Bangalore",
+//       latitude: "12.9423",
+//       longitude: "77.5649",
+//       phone_number: "+91 75103 82782",
+//       email: "info@fitflix.in",
+//       opening_time: "1970-01-01T06:00:00.000Z",
+//       closing_time: "1970-01-01T22:00:00.000Z",
+//       holiday_dates: [],
+//       description: "Fitflix Gym in ITI Layout, Bangalore is known for its commitment to helping members achieve their health and fitness goals. Offers Gym, Cardio, Crossfit, Strengthening Exercises, and Personal Trainers.",
+//       gym_amenities: {
+//         create: [
+//           {
+//             name: "Cardio Area",
+//             icon_url: "https://example.com/icons/cardio.svg"
+//           },
+//           {
+//             name: "Crossfit Zone",
+//             icon_url: "https://example.com/icons/crossfit.svg"
+//           },
+//           {
+//             name: "Personal Training",
+//             icon_url: "https://example.com/icons/pt.svg"
+//           },
+//           {
+//             name: "Strength Training",
+//             icon_url: "https://example.com/icons/strength.svg"
+//           }
+//         ]
+//       }
+//     },
+//   ];
+
+//   for (const gym of gyms) {
+//     await prisma.gym.create({
+//       data: gym,
+//       include: {
+//         gym_amenities: true
+//       }
+//     });
+//   }
+
+//   console.log("✅ Gyms seeded successfully.");
+// }
+
+// main()
+//   .catch((e) => {
+//     console.error("❌ Seeding failed:", e);
+//     process.exit(1);
+//   })
+//   .finally(async () => {
+//     await prisma.$disconnect();
+//   });
