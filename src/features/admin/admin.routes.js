@@ -37,6 +37,8 @@ const gymRoutes = require('./gym.routes');
  */
 router.get('/users',  adminController.getAllUsers);
 
+router.get('/all-gyms', adminController.getAllGyms);
+
 // Mount gym routes under /admin/gyms
 router.use('/gyms', gymRoutes);
 

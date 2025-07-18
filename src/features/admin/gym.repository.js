@@ -23,7 +23,11 @@ async function getGymById(id) {
 }
 
 async function getAllGyms() {
-    return await prisma.gym.findMany();
+    return await prisma.gym.findMany({
+        include: {
+            gym_amenities: true
+        }
+    });
 }
 
 module.exports = {

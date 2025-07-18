@@ -7,16 +7,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Gym {
+  gym_id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String                 @db.VarChar(255)
+  address              String
+  latitude             Decimal                @db.Decimal(10, 7)
+  longitude            Decimal                @db.Decimal(10, 7)
+  phone_number         String?                @db.VarChar(20)
+  email                String?                @db.VarChar(255)
+  opening_time         DateTime               @db.Time(6)
+  closing_time         DateTime               @db.Time(6)
+  holiday_dates        DateTime[]             @db.Date
+  description          String?
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  is_deleted           Boolean                @default(false)
+  amenities            gym_amenities[]
+  gym_classes_services gym_classes_services[]
+  gym_media            gym_media[]
+  gym_trial_passes     gym_trial_passes[]
+  membership_plans     membership_plans[]
+  offers               offers[]
+  @@map("gym")
+}
+
+model amenity {
+  amenity_id   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String           @db.VarChar(100)
+  icon_url     String?
+  created_at   DateTime         @default(now()) @db.Timestamptz(6)
+  gyms         gym_amenities[]
+
+  @@map("amenity")
+}
+
 model gym_amenities {
   gym_id     String   @db.Uuid
-  amenity_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  amenity_id String   @db.Uuid
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  icon_url   String?
-  name       String   @db.VarChar(100)
-  gyms       Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_ga_gym")
+  gym        Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
+  amenity    Amenity  @relation(fields: [amenity_id], references: [amenity_id], onDelete: Cascade)
 
-  @@unique([gym_id, name])
+  @@id([gym_id, amenity_id])
+  @@map("gym_amenities")
 }
+
 
 model payments {
   payment_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -68,29 +103,6 @@ model user_profiles {
   updated_at           DateTime    @default(now()) @db.Timestamptz(6)
   gender               GenderEnum?
   users                User        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_profile_user")
-}
-
-model Gym {
-  gym_id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                 String                 @db.VarChar(255)
-  address              String
-  latitude             Decimal                @db.Decimal(10, 7)
-  longitude            Decimal                @db.Decimal(10, 7)
-  phone_number         String?                @db.VarChar(20)
-  email                String?                @db.VarChar(255)
-  opening_time         DateTime               @db.Time(6)
-  closing_time         DateTime               @db.Time(6)
-  holiday_dates        DateTime[]             @db.Date
-  description          String?
-  created_at           DateTime               @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
-  is_deleted           Boolean                @default(false)
-  gym_amenities        gym_amenities[]
-  gym_classes_services gym_classes_services[]
-  gym_media            gym_media[]
-  gym_trial_passes     gym_trial_passes[]
-  membership_plans     membership_plans[]
-  offers               offers[]
 }
 
 model User {
