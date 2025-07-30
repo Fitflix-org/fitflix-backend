@@ -48,7 +48,11 @@ async function updateGym(id, gymData) {
 async function getAllGyms() {
     return await prisma.gym.findMany({
         include: {
-            gym_amenities: true
+            gym_amenities: {
+                include: {
+                    amenity: true 
+                }
+            }
         }
     });
 }
@@ -60,18 +64,6 @@ async function getGymById(id) {
             gym_amenities: {
                 include: {
                     amenity: true
-                }
-            }
-        }
-    });
-}
-
-async function getAllGyms() {
-    return await prisma.gym.findMany({
-        include: {
-            gym_amenities: {
-                include: {
-                    amenity: true 
                 }
             }
         }

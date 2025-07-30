@@ -6,10 +6,27 @@ const router = express.Router();
 
 // Import feature routes
 const authRoutes = require('./features/auth/auth.routes');
-// const userRoutes = require('../features/users/user.routes'); // Will be refactored later
 const adminRoutes = require('./features/admin/admin.routes');
 const userProfileRoutes = require('./features/user_profile/user_profile.routes');
-// const frontdeskRoutes = require('./frontdesk/index'); // Assuming frontdesk routes are aggregated in frontdesk/index.js
+const gymRoutes = require('./features/gyms/gym.routes');
+const membershipRoutes = require('./features/memberships/membership.routes');
+const paymentRoutes = require('./features/payments/payment.routes');
+const nutritionRoutes = require('./features/nutrition/nutrition.routes');
+const chatbotRoutes = require('./features/chatbot/chatbot.routes');
+
+// Import middleware
+const { generalLimiter } = require('./middlewares/rateLimiter');
+const { sanitizeInput } = require('./middlewares/inputValidation');
+
+// ---------------------------------------------------
+// Apply Global Middleware
+// ---------------------------------------------------
+
+// Apply rate limiting to all routes
+router.use(generalLimiter);
+
+// Apply input sanitization to all routes
+router.use(sanitizeInput);
 
 // ---------------------------------------------------
 // Mount Feature Routes
@@ -18,16 +35,25 @@ const userProfileRoutes = require('./features/user_profile/user_profile.routes')
 // Auth routes (e.g., /api/auth/login, /api/auth/register)
 router.use('/auth', authRoutes);
 
-// User routes (e.g., /api/users/profile) - will be refactored into src/features/users
-// router.use('/users', userRoutes);
-
 // Admin routes (e.g., /api/admin/gyms)
 router.use('/admin', adminRoutes);
 
-// Frontdesk routes (e.g., /api/frontdesk/checkins)
-// router.use('/frontdesk', frontdeskRoutes);
-
-// Add more feature routes here as you refactor them...
+// User profile routes (e.g., /api/user-profile)
 router.use('/user-profile', userProfileRoutes);
+
+// Public gym routes (e.g., /api/gyms)
+router.use('/gyms', gymRoutes);
+
+// Membership routes (e.g., /api/memberships)
+router.use('/memberships', membershipRoutes);
+
+// Payment routes (e.g., /api/payments)
+router.use('/payments', paymentRoutes);
+
+// Nutrition routes (e.g., /api/nutrition)
+router.use('/nutrition', nutritionRoutes);
+
+// Chatbot routes (e.g., /api/chatbot)
+router.use('/chatbot', chatbotRoutes);
 
 module.exports = router;

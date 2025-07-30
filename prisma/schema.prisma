@@ -44,17 +44,21 @@ model gym_amenities {
 }
 
 model payments {
-  payment_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id          String             @db.Uuid
-  amount           Decimal            @db.Decimal(10, 2)
-  payment_date     DateTime           @default(now()) @db.Timestamptz(6)
-  method           String?            @db.VarChar(50)
-  notes            String?
-  is_deleted       Boolean            @default(false)
-  created_at       DateTime           @default(now()) @db.Timestamptz(6)
-  status           PaymentStatusEnum?
-  users            User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_pay_user")
-  user_memberships user_memberships[]
+  payment_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String             @db.Uuid
+  razorpay_order_id   String?            @db.Uuid
+  razorpay_payment_id String?            @unique @db.VarChar(255)
+  razorpay_signature  String?            @db.VarChar(255)
+  amount              Decimal            @db.Decimal(10, 2)
+  payment_date        DateTime           @default(now()) @db.Timestamptz(6)
+  method              String?            @db.VarChar(50)
+  notes               String?
+  is_deleted          Boolean            @default(false)
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  status              PaymentStatusEnum?
+  users               User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_pay_user")
+  razorpay_order      razorpay_orders?   @relation(fields: [razorpay_order_id], references: [order_id])
+  user_memberships    user_memberships[]
 }
 
 model user_memberships {
@@ -96,23 +100,28 @@ model user_profiles {
 }
 
 model User {
-  user_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email            String             @unique @db.VarChar(255)
-  password_hash    String
-  username         String             @unique @db.VarChar(100)
-  created_at       DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
-  is_deleted       Boolean            @default(false)
-  role             UserRoleEnum       @default(user)
-  gym_trial_passes gym_trial_passes[]
-  hydration_logs   hydration_logs[]
-  meals            meals[]
-  notifications    notifications[]
-  payments         payments[]
-  user_goals       user_goals[]
-  user_memberships user_memberships[]
-  user_profiles    user_profiles?
-  workouts         workouts[]
+  user_id               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String                  @unique @db.VarChar(255)
+  password_hash         String
+  username              String                  @unique @db.VarChar(100)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  is_deleted            Boolean                 @default(false)
+  role                  UserRoleEnum            @default(user)
+  chatbot_messages      chatbot_messages[]
+  gym_trial_passes      gym_trial_passes[]
+  hydration_logs        hydration_logs[]
+  meals                 meals[]
+  notifications         notifications[]
+  nutrition_logs        nutrition_logs[]
+  password_reset_tokens password_reset_tokens[]
+  payments              payments[]
+  razorpay_orders       razorpay_orders[]
+  refresh_tokens        refresh_tokens[]
+  user_goals            user_goals[]
+  user_memberships      user_memberships[]
+  user_profiles         user_profiles?
+  workouts              workouts[]
 }
 
 model exercises {
@@ -315,11 +324,83 @@ model workouts {
 }
 
 model amenities {
-  amenity_id String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String          @db.VarChar(100)
-  icon_url   String?
-  created_at DateTime        @default(now()) @db.Timestamptz(6)
-  
+  amenity_id    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String          @db.VarChar(100)
+  icon_url      String?
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+  gym_amenities gym_amenities[]
+}
+
+model refresh_tokens {
+  token_id   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  token_hash String   @unique
+  expires_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  is_revoked Boolean  @default(false)
+  User       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model password_reset_tokens {
+  token_id   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  token_hash String   @unique
+  expires_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  is_used    Boolean  @default(false)
+  User       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model nutrition_logs {
+  log_id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String   @db.Uuid
+  meal_type    String   @db.VarChar(50) // breakfast, lunch, dinner, snack
+  food_name    String   @db.VarChar(255)
+  quantity     Decimal  @db.Decimal(7, 2)
+  unit         String   @db.VarChar(50)
+  calories     Decimal? @db.Decimal(7, 2)
+  protein_g    Decimal? @db.Decimal(7, 2)
+  carbs_g      Decimal? @db.Decimal(7, 2)
+  fat_g        Decimal? @db.Decimal(7, 2)
+  logged_date  DateTime @db.Date
+  logged_time  DateTime @db.Time(6)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  User         User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("nutrition_logs")
+}
+
+model chatbot_messages {
+  message_id    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  message       String
+  response      String?
+  context_data  Json?    // User profile context for AI
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  response_time Int?     // Response time in milliseconds
+  User          User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("chatbot_messages")
+}
+
+model razorpay_orders {
+  order_id       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String          @db.Uuid
+  razorpay_order_id String       @unique @db.VarChar(255)
+  amount         Decimal         @db.Decimal(10, 2)
+  currency       String          @default("INR") @db.VarChar(10)
+  receipt        String?         @db.VarChar(255)
+  status         RazorpayOrderStatus @default(created)
+  created_at     DateTime        @default(now()) @db.Timestamptz(6)
+  expires_at     DateTime        @db.Timestamptz(6)
+  User           User            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  payments       payments[]
+
+  @@map("razorpay_orders")
 }
 
 enum UserRoleEnum {
@@ -355,4 +436,12 @@ enum PaymentStatusEnum {
   pending
   failed
   refunded
+}
+
+enum RazorpayOrderStatus {
+  created
+  attempted
+  paid
+  cancelled
+  expired
 }

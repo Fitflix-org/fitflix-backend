@@ -80,7 +80,169 @@ async function createUser(userData) {
   }
 }
 
+/**
+ * Finds a user by their ID.
+ * @param {number} userId - The ID of the user.
+ * @returns {Promise<object|null>} The user object if found, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
+async function findUserById(userId) {
+  try {
+    return await prisma.User.findUnique({
+      where: { user_id: userId },
+      include: { 
+        user_profiles: true
+      }
+    });
+  } catch (err) {
+    console.error('AuthRepository.findUserById:', err);
+    throw new Error('Database error during user lookup.');
+  }
+}
+
+/**
+ * Updates user password.
+ * @param {number} userId - The ID of the user.
+ * @param {string} passwordHash - New password hash.
+ * @returns {Promise<object>} Updated user object.
+ * @throws {Error} If a database error occurs.
+ */
+async function updateUserPassword(userId, passwordHash) {
+  try {
+    return await prisma.User.update({
+      where: { user_id: userId },
+      data: { 
+        password_hash: passwordHash,
+        updated_at: new Date()
+      }
+    });
+  } catch (err) {
+    console.error('AuthRepository.updateUserPassword:', err);
+    throw new Error('Database error during password update.');
+  }
+}
+
+/**
+ * Creates password reset token.
+ * @param {object} tokenData - Token data including userId, token, expiresAt.
+ * @returns {Promise<object>} Created token record.
+ * @throws {Error} If a database error occurs.
+ */
+async function createPasswordResetToken(tokenData) {
+  try {
+    return await prisma.password_reset_tokens.create({
+      data: {
+        user_id: tokenData.userId,
+        token: tokenData.token,
+        expires_at: tokenData.expiresAt,
+        created_at: new Date()
+      }
+    });
+  } catch (err) {
+    console.error('AuthRepository.createPasswordResetToken:', err);
+    throw new Error('Database error during password reset token creation.');
+  }
+}
+
+/**
+ * Finds password reset token.
+ * @param {string} token - Reset token.
+ * @returns {Promise<object|null>} Token record if found, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
+async function findPasswordResetToken(token) {
+  try {
+    return await prisma.password_reset_tokens.findUnique({
+      where: { token }
+    });
+  } catch (err) {
+    console.error('AuthRepository.findPasswordResetToken:', err);
+    throw new Error('Database error during password reset token lookup.');
+  }
+}
+
+/**
+ * Deletes password reset token.
+ * @param {string} token - Reset token.
+ * @returns {Promise<object>} Deleted token record.
+ * @throws {Error} If a database error occurs.
+ */
+async function deletePasswordResetToken(token) {
+  try {
+    return await prisma.password_reset_tokens.delete({
+      where: { token }
+    });
+  } catch (err) {
+    console.error('AuthRepository.deletePasswordResetToken:', err);
+    throw new Error('Database error during password reset token deletion.');
+  }
+}
+
+/**
+ * Creates refresh token.
+ * @param {object} tokenData - Token data including userId, token, expiresAt.
+ * @returns {Promise<object>} Created token record.
+ * @throws {Error} If a database error occurs.
+ */
+async function createRefreshToken(tokenData) {
+  try {
+    return await prisma.refresh_tokens.create({
+      data: {
+        user_id: tokenData.userId,
+        token: tokenData.token,
+        expires_at: tokenData.expiresAt,
+        created_at: new Date()
+      }
+    });
+  } catch (err) {
+    console.error('AuthRepository.createRefreshToken:', err);
+    throw new Error('Database error during refresh token creation.');
+  }
+}
+
+/**
+ * Finds refresh token.
+ * @param {string} token - Refresh token.
+ * @returns {Promise<object|null>} Token record if found, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
+async function findRefreshToken(token) {
+  try {
+    return await prisma.refresh_tokens.findUnique({
+      where: { token }
+    });
+  } catch (err) {
+    console.error('AuthRepository.findRefreshToken:', err);
+    throw new Error('Database error during refresh token lookup.');
+  }
+}
+
+/**
+ * Deletes refresh token.
+ * @param {string} token - Refresh token.
+ * @returns {Promise<object>} Deleted token record.
+ * @throws {Error} If a database error occurs.
+ */
+async function deleteRefreshToken(token) {
+  try {
+    return await prisma.refresh_tokens.delete({
+      where: { token }
+    });
+  } catch (err) {
+    console.error('AuthRepository.deleteRefreshToken:', err);
+    throw new Error('Database error during refresh token deletion.');
+  }
+}
+
 module.exports = {
   findUserByEmail,
-  createUser
+  createUser,
+  findUserById,
+  updateUserPassword,
+  createPasswordResetToken,
+  findPasswordResetToken,
+  deletePasswordResetToken,
+  createRefreshToken,
+  findRefreshToken,
+  deleteRefreshToken
 };

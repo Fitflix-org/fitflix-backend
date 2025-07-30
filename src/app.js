@@ -5,34 +5,44 @@
 require('dotenv').config(); // Load environment variables at the very top
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const cors = require('cors'); // Assuming you need CORS for frontend interaction
 
 // Import the main API router that aggregates all feature routes
 const apiRoutes = require('./index');
 
-
 // Import global middlewares
-const { authenticate } = require('./middlewares/auth.middleware'); // Your JWT verify middleware
-const errorHandler = require('./middlewares/errorHandler'); // Centralized error handler (you'll create/update this)
-// const validationMiddleware = require('./middlewares/validation.middleware'); // If you implement a global validation middleware
+const { authenticate } = require('./middlewares/auth.middleware');
+const errorHandler = require('./middlewares/errorHandler');
+const { configureSecurity, requestLimits, requestLogger, secureErrorHandler } = require('./middlewares/security');
 
 const app = express();
+
+// ---------------------------------------------------
+// Security Configuration
+// ---------------------------------------------------
+
+// Configure security headers and CORS
+configureSecurity(app);
+
+// Trust proxy (for rate limiting and IP detection)
+app.set('trust proxy', 1);
+
+// Request logging (in development)
+if (process.env.NODE_ENV === 'development') {
+    app.use(requestLogger);
+}
 
 // ---------------------------------------------------
 // Global Middlewares
 // ---------------------------------------------------
 
-// Enable CORS for all origins (adjust as needed for production security)
-app.use(cors({
-  origin: 'http://localhost:8080',
-  credentials: true,
+// Parse JSON request bodies with size limit
+app.use(express.json({ limit: requestLimits.json }));
+
+// Parse URL-encoded request bodies with size limit
+app.use(express.urlencoded({ 
+    extended: true, 
+    limit: requestLimits.urlencoded 
 }));
-
-// Parse JSON request bodies
-app.use(express.json());
-
-// Parse URL-encoded request bodies (for form data)
-app.use(express.urlencoded({ extended: true }));
 
 // Parse cookies from incoming requests
 app.use(cookieParser());
@@ -41,22 +51,36 @@ app.use(cookieParser());
 // API Routes
 // ---------------------------------------------------
 
-// Mount the main API router under a '/api' prefix (common practice)
+// Mount the main API router under a '/api' prefix
 app.use('/api', apiRoutes);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
 
 // ---------------------------------------------------
 // Error Handling Middleware
 // ---------------------------------------------------
-// This should be the last middleware added.
-// It catches any errors thrown by previous middlewares or route handlers.
+
+// Security error handler (should come before general error handler)
+app.use(secureErrorHandler);
+
+// General error handler (should be the last middleware)
 app.use(errorHandler);
 
 // ---------------------------------------------------
 // Default Route for unmatched requests (404)
 // ---------------------------------------------------
 app.use((req, res, next) => {
-  res.status(404).json({ message: 'Not Found' });
+    res.status(404).json({ 
+        error: 'Not Found',
+        message: 'The requested resource was not found on this server.'
+    });
 });
 
 

@@ -94,8 +94,123 @@ async function logout(req, res, next) {
   }
 }
 
+/**
+ * Handles change password requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
+ */
+async function changePassword(req, res, next) {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  try {
+    await authService.changePassword(userId, currentPassword, newPassword);
+    
+    return res.status(200).json({
+      message: 'Password changed successfully.'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Handles forgot password requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
+ */
+async function forgotPassword(req, res, next) {
+  const { email } = req.body;
+
+  try {
+    await authService.initiateForgotPassword(email);
+    
+    return res.status(200).json({
+      message: 'Password reset instructions sent to your email.'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Handles reset password requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
+ */
+async function resetPassword(req, res, next) {
+  const { token, newPassword } = req.body;
+
+  try {
+    await authService.resetPassword(token, newPassword);
+    
+    return res.status(200).json({
+      message: 'Password reset successfully.'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Handles refresh token requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
+ */
+async function refreshToken(req, res, next) {
+  const { refreshToken } = req.body;
+
+  try {
+    const { user, token, expiresInMs } = await authService.refreshAccessToken(refreshToken);
+
+    // Set new HTTP-only cookie with the token
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: expiresInMs
+    });
+
+    return res.status(200).json({
+      message: 'Token refreshed successfully.',
+      user: user
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Handles get current user requests.
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {function} next - The Express next middleware function.
+ */
+async function getCurrentUser(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const user = await authService.getCurrentUser(userId);
+    
+    return res.status(200).json({
+      message: 'User data retrieved successfully.',
+      user: user
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   login,
   register,
-  logout
+  logout,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+  refreshToken,
+  getCurrentUser
 };
