@@ -1,40 +1,60 @@
 const { PrismaClient } = require('@prisma/client');
+const { NotFoundError, ConflictError, ValidationError } = require('../../common/errors');
 const prisma = new PrismaClient();
 
 async function getAllMembershipPlans(gymId = null) {
-    const whereClause = {
-        is_deleted: false
-    };
-    
-    if (gymId) {
-        whereClause.gym_id = gymId;
-    }
-    
-    return await prisma.membership_plans.findMany({
-        where: whereClause,
-        include: {
-            Gym: {
-                select: {
-                    gym_id: true,
-                    name: true,
-                    address: true
+    try {
+        const whereClause = {
+            is_deleted: false
+        };
+        
+        if (gymId) {
+            whereClause.gym_id = gymId;
+        }
+        
+        return await prisma.membership_plans.findMany({
+            where: whereClause,
+            include: {
+                Gym: {
+                    select: {
+                        gym_id: true,
+                        name: true,
+                        address: true
+                    }
                 }
-            }
-        },
-        orderBy: [
-            { gym_id: 'asc' },
-            { price: 'asc' }
-        ]
-    });
+            },
+            orderBy: [
+                { gym_id: 'asc' },
+                { price: 'asc' }
+            ]
+        });
+    } catch (err) {
+        console.error('MembershipRepository.getAllMembershipPlans:', err.message);
+        throw new Error('Database error during membership plans lookup.');
+    }
 }
 
 async function getMembershipPlanById(planId) {
-    return await prisma.membership_plans.findUnique({
-        where: {
-            plan_id: planId,
-            is_deleted: false
+    try {
+        const plan = await prisma.membership_plans.findUnique({
+            where: {
+                plan_id: planId,
+                is_deleted: false
+            }
+        });
+        
+        if (!plan) {
+            throw new NotFoundError('Membership plan not found.');
         }
-    });
+        
+        return plan;
+    } catch (err) {
+        if (err instanceof NotFoundError) {
+            throw err;
+        }
+        console.error('MembershipRepository.getMembershipPlanById:', err.message);
+        throw new Error('Database error during membership plan lookup.');
+    }
 }
 
 async function getUserMemberships(userId) {

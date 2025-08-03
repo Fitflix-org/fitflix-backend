@@ -1,51 +1,53 @@
 const { PrismaClient } = require('@prisma/client');
+const { NotFoundError, ValidationError } = require('../../common/errors');
 const prisma = new PrismaClient();
 
 async function getAllGyms(filters = {}) {
-    const { city, latitude, longitude, radius } = filters;
-    
-    let whereClause = {
-        is_deleted: false
-    };
-    
-    // Filter by city if provided
-    if (city) {
-        whereClause.address = {
-            contains: city,
-            mode: 'insensitive'
+    try {
+        const { city, latitude, longitude, radius } = filters;
+        
+        let whereClause = {
+            is_deleted: false
         };
-    }
-    
-    const gyms = await prisma.gym.findMany({
-        where: whereClause,
-        include: {
-            gym_amenities: {
-                include: {
-                    amenity: true
-                }
-            },
-            gym_classes_services: true,
-            gym_media: {
-                orderBy: {
-                    order_index: 'asc'
-                }
-            },
-            membership_plans: {
-                where: {
-                    is_deleted: false
-                },
-                orderBy: {
-                    price: 'asc'
-                }
-            }
-        },
-        orderBy: {
-            created_at: 'desc'
+        
+        // Filter by city if provided
+        if (city) {
+            whereClause.address = {
+                contains: city,
+                mode: 'insensitive'
+            };
         }
-    });
-    
-    // Calculate distance if user location provided
-    if (latitude && longitude && radius) {
+        
+        const gyms = await prisma.gym.findMany({
+            where: whereClause,
+            include: {
+                gym_amenities: {
+                    include: {
+                        amenity: true
+                    }
+                },
+                gym_classes_services: true,
+                gym_media: {
+                    orderBy: {
+                        order_index: 'asc'
+                    }
+                },
+                membership_plans: {
+                    where: {
+                        is_deleted: false
+                    },
+                    orderBy: {
+                        price: 'asc'
+                    }
+                }
+            },
+            orderBy: {
+                created_at: 'desc'
+            }
+        });
+        
+        // Calculate distance if user location provided
+        if (latitude && longitude && radius) {
         return gyms.filter(gym => {
             const distance = calculateDistance(
                 latitude, longitude,
@@ -62,46 +64,64 @@ async function getAllGyms(filters = {}) {
     }
     
     return gyms;
+    } catch (err) {
+        console.error('GymRepository.getAllGyms:', err.message);
+        throw new Error('Database error during gym lookup.');
+    }
 }
 
 async function getGymById(id) {
-    return await prisma.gym.findUnique({
-        where: {
-            gym_id: id.toString(),
-            is_deleted: false
-        },
-        include: {
-            gym_amenities: {
-                include: {
-                    amenity: true
-                }
+    try {
+        const gym = await prisma.gym.findUnique({
+            where: {
+                gym_id: id.toString(),
+                is_deleted: false
             },
-            gym_classes_services: true,
-            gym_media: {
-                orderBy: {
-                    order_index: 'asc'
-                }
-            },
-            membership_plans: {
-                where: {
-                    is_deleted: false
+            include: {
+                gym_amenities: {
+                    include: {
+                        amenity: true
+                    }
                 },
-                orderBy: {
-                    price: 'asc'
-                }
-            },
-            offers: {
-                where: {
-                    start_date: {
-                        lte: new Date()
+                gym_classes_services: true,
+                gym_media: {
+                    orderBy: {
+                        order_index: 'asc'
+                    }
+                },
+                membership_plans: {
+                    where: {
+                        is_deleted: false
                     },
-                    end_date: {
-                        gte: new Date()
+                    orderBy: {
+                        price: 'asc'
+                    }
+                },
+                offers: {
+                    where: {
+                        start_date: {
+                            lte: new Date()
+                        },
+                        end_date: {
+                            gte: new Date()
+                        }
                     }
                 }
             }
+        });
+        
+        if (!gym) {
+            throw new NotFoundError('Gym not found.');
         }
-    });
+        
+        return gym;
+    } catch (err) {
+        if (err instanceof NotFoundError) {
+            throw err;
+        }
+        console.error('GymRepository.getGymById:', err.message);
+        throw new Error('Database error during gym lookup.');
+    }
 }
 
 // Helper function to calculate distance between two coordinates using Haversine formula

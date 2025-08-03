@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const authRepository = require('./auth.repository'); // Import the repository
 const { hashPassword, comparePassword, parseDuration } = require('../../common/helpers'); // Import bcrypt and duration helpers
+const { ConflictError, ValidationError } = require('../../common/errors');
 
 // Load JWT configurations from .env, with sane defaults
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_dev_secret';
@@ -106,10 +107,12 @@ async function registerUser(userData) {
       expiresInMs
     };
   } catch (error) {
-    // Re-throw specific errors from the repository or a generic one
-    if (error.message.includes('Required fields (email, password, username, first_name, last_name) are missing.') ||
-        error.message.includes('User with this email already exists.') ||
-        error.message.includes('Username already taken.')) {
+    // Re-throw specific errors from the repository
+    if (error instanceof ConflictError ||
+        error instanceof ValidationError ||
+        error.message.includes('Required fields') ||
+        error.message.includes('User with this email already exists') ||
+        error.message.includes('Username already taken')) {
       throw error;
     }
     console.error('AuthService: Register error:', error);

@@ -144,6 +144,7 @@ function secureErrorHandler(err, req, res, next) {
     
     console.error('Security Error:', err);
     
+    // Only handle specific security errors
     if (err.message && err.message.includes('CORS')) {
         return res.status(403).json({
             error: 'CORS policy violation'
@@ -156,10 +157,8 @@ function secureErrorHandler(err, req, res, next) {
         });
     }
     
-    return res.status(500).json({
-        error: 'Internal server error',
-        ...(isDevelopment && { details: err.message })
-    });
+    // Pass other errors to the next error handler
+    next(err);
 }
 
 module.exports = {

@@ -1,5 +1,6 @@
 // src/features/user_profile/user_profile.repository.js
 const prisma = require('../../config/db');
+const { NotFoundError, ValidationError } = require('../../common/errors');
 
 /**
  * Finds a user profile by user ID.
@@ -16,7 +17,7 @@ const findProfileByUserId = async (userId) => {
     });
     return userProfile;
   } catch (err) {
-    console.error('UserProfileRepository.findProfileByUserId:', err);
+    console.error('UserProfileRepository.findProfileByUserId:', err.message);
     throw new Error('Database error during user profile lookup.');
   }
 };
@@ -47,7 +48,7 @@ const createProfile = async (userId, profileData) => {
     });
     return newProfile;
   } catch (err) {
-    console.error('UserProfileRepository.createProfile:', err);
+    console.error('UserProfileRepository.createProfile:', err.message);
     throw new Error('Database error during user profile creation.');
   }
 };
@@ -100,9 +101,9 @@ const updateProfile = async (userId, profileData) => {
     });
     return updatedProfile;
   } catch (err) {
-    console.error('UserProfileRepository.updateProfile:', err);
+    console.error('UserProfileRepository.updateProfile:', err.message);
     if (err.code === 'P2025') {
-      throw new Error('User profile not found.');
+      throw new NotFoundError('User profile not found.');
     }
     throw new Error('Database error during user profile update.');
   }

@@ -23,8 +23,8 @@ const schemas = {
             'string.min': 'Password must be at least 6 characters long',
             'any.required': 'Password is required'
         }),
-        username: Joi.string().alphanum().min(3).max(30).required().messages({
-            'string.alphanum': 'Username must contain only letters and numbers',
+        username: Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).min(3).max(30).required().messages({
+            'string.pattern.base': 'Username must contain only letters, numbers, underscores, and hyphens',
             'string.min': 'Username must be at least 3 characters long',
             'string.max': 'Username cannot exceed 30 characters',
             'any.required': 'Username is required'

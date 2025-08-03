@@ -84,7 +84,7 @@ Register a new user account.
 {
   "email": "user@example.com",
   "password": "password123",
-  "username": "johndoe"
+  "username": "john_doe"
 }
 ```
 
@@ -898,8 +898,12 @@ All responses include the following security headers:
 3. **Pagination**: Use `page` and `limit` query parameters
 4. **Filtering**: Most list endpoints support filtering via query parameters
 5. **CORS**: Enabled for specified origins with credentials support
-6. **Content-Type**: All requests should use `application/json`
-7. **Environment**: Replace localhost URLs with production domains when deploying
+6. **Validation Rules**:
+   - **Email**: Must be valid email format
+   - **Password**: Minimum 6 characters
+   - **Username**: 3-30 characters, letters, numbers, underscores, and hyphens only
+7. **Content-Type**: All requests should use `application/json`
+8. **Environment**: Replace localhost URLs with production domains when deploying
 
 ## 🚀 SDK Examples
 

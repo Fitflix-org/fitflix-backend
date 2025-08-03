@@ -1,6 +1,7 @@
 // src/features/auth/auth.repository.js
 const prisma = require('../../config/db');
 const userProfileRepository = require('../user_profile/user_profile.repository');
+const { ConflictError, NotFoundError } = require('../../common/errors');
 
 /**
  * Finds a user by their email address.
@@ -17,7 +18,7 @@ async function findUserByEmail(email) {
       }
     });
   } catch (err) {
-    console.error('AuthRepository.findUserByEmail:', err);
+    console.error('AuthRepository.findUserByEmail:', err.message);
     throw new Error('Database error during user lookup.');
   }
 }
@@ -61,8 +62,7 @@ async function createUser(userData) {
       user_profiles: user_profile // Include the created profile
     };
   } catch (err) {
-    console.error('AuthRepository.createUser:', err);
-    console.log(err);
+    console.error('AuthRepository.createUser:', err.message);
     
     // Handle Prisma unique constraint violations
     if (err.code === 'P2002') {
@@ -71,9 +71,9 @@ async function createUser(userData) {
         target = Array.isArray(err.meta.target) ? err.meta.target.join(', ') : String(err.meta.target);
       }
       if (target.includes('email')) {
-        throw new Error('User with this email already exists.');
+        throw new ConflictError('User with this email already exists.');
       } else if (target.includes('username')) {
-        throw new Error('Username already taken.');
+        throw new ConflictError('Username already taken.');
       }
     }
     throw new Error('Database error during user creation.');
@@ -95,7 +95,7 @@ async function findUserById(userId) {
       }
     });
   } catch (err) {
-    console.error('AuthRepository.findUserById:', err);
+    console.error('AuthRepository.findUserById:', err.message);
     throw new Error('Database error during user lookup.');
   }
 }
@@ -117,7 +117,7 @@ async function updateUserPassword(userId, passwordHash) {
       }
     });
   } catch (err) {
-    console.error('AuthRepository.updateUserPassword:', err);
+    console.error('AuthRepository.updateUserPassword:', err.message);
     throw new Error('Database error during password update.');
   }
 }

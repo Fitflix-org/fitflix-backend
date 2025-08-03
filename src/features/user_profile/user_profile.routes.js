@@ -92,4 +92,58 @@ router.post('/', authenticate, userProfileController.createOrUpdateUserProfile);
  */
 router.put('/', authenticate, userProfileController.createOrUpdateUserProfile);
 
+/**
+ * @swagger
+ * /user-profile/me:
+ *   get:
+ *     summary: Get current user's profile
+ *     tags:
+ *       - User Profile
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserProfile'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User profile not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/me', authenticate, userProfileController.getUserProfile);
+
+/**
+ * @swagger
+ * /user-profile/me:
+ *   put:
+ *     summary: Update current user's profile
+ *     tags:
+ *       - User Profile
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserProfileInput'
+ *     responses:
+ *       200:
+ *         description: User profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserProfile'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/me', authenticate, userProfileController.createOrUpdateUserProfile);
+
 module.exports = router;
