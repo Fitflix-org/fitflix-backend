@@ -4,53 +4,44 @@
 version: '3.8'
 
 services:
-  # ----------------------------------------------------
-  # Development Database Service
-  # Used for local development and manual testing.
-  # ----------------------------------------------------
-  db_dev:
-    image: postgres:16-alpine # Using a lightweight PostgreSQL image
-    container_name: fitflix_db_dev
-    restart: always # Always restart the container if it stops
+  app:
+    build: .
     ports:
-      - "5432:5432" # Map host port 5432 to container port 5432
+      - "3000:3000"
     environment:
-      POSTGRES_DB: fitflix_dev_db # Database name for development
-      POSTGRES_USER: postgres      # Default user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_DEV:-ChangeMe123!}     # Password loaded from environment variable or defaults to a stronger value
-    volumes:
-      # Persist data to a named volume to prevent data loss on container stop/remove
-      - fitflix_dev_data:/var/lib/postgresql/data
-    healthcheck: # Health check to ensure the database is ready
-      test: ["CMD-SHELL", "pg_isready -U postgres -d fitflix_dev_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # ----------------------------------------------------
-  # Testing Database Service
-  # Used exclusively for automated integration tests.
-  # Runs on a different port to avoid conflicts with the dev DB.
-  # ----------------------------------------------------
-  db_test:
-    image: postgres:16-alpine
-    container_name: fitflix_db_test
-    restart: always
-    ports:
-      - "5433:5432" # Map host port 5433 to container port 5432
-    environment:
-      POSTGRES_DB: fitflix_test_db # Database name for testing
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_TEST:-ChangeMe123!}
-    volumes:
-      # Persist data to a named volume for the test DB
-      - fitflix_test_data:/var/lib/postgresql/data
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:password@db:5432/fitflix
+      - DIRECT_URL=postgresql://postgres:password@db:5432/fitflix
+      - JWT_SECRET=your-jwt-secret-here
+      - ADMIN_DASHBOARD_URL=http://localhost:5173
+      - WEBSITE_URL=http://localhost:8080
+    depends_on:
+      - db
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d fitflix_test_db"]
-      interval: 5s
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=fitflix
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  fitflix_dev_data: # Named volume for development data persistence
-  fitflix_test_data: # Named volume for testing data persistence
+  postgres_data:
