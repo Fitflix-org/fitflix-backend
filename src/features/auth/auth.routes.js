@@ -1,147 +1,142 @@
-// src/features/auth/auth.routes.js
-// This file defines the API routes for authentication.
-// It imports the auth.controller and applies necessary middlewares.
-
 const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
+
 const router = express.Router();
+const prisma = new PrismaClient();
 
-/**
- * @swagger
- * tags:
- *   name: Authentication
- *   description: User authentication and authorization
- */
-const authController = require('./auth.controller'); // Import the new auth controller
-const { authenticate } = require('../../middlewares/auth.middleware');
+// Middleware to verify JWT token
+const authenticateToken = async (req, res, next) => {
+  const token = req.cookies.admin_token || req.headers.authorization?.split(' ')[1];
 
-// Public routes for authentication
-/**
- * @swagger
- * /auth/login:
- *   post:
- *     summary: User login
- *     tags:
- *       - Authentication
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *     responses:
- *       200:
- *         description: Login successful
- *         headers:
- *           Set-Cookie:
- *             schema:
- *               type: string
- *               example: token=jwt_token_here; HttpOnly; Secure; SameSite=Strict
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *       400:
- *         description: Invalid input
- *       401:
- *         description: Invalid credentials
- *       500:
- *         description: Internal server error
- */
-router.post('/login', authController.login);
-/**
- * @swagger
- * /auth/register:
- *   post:
- *     summary: User registration
- *     tags:
- *       - Authentication
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *               - username
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *               username:
- *                 type: string
- *     responses:
- *       201:
- *         description: User registered successfully
- *         headers:
- *           Set-Cookie:
- *             schema:
- *               type: string
- *               example: token=jwt_token_here; HttpOnly; Secure; SameSite=Strict
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *       400:
- *         description: Invalid input
- *       409:
- *         description: User with email/username already exists
- *       500:
- *         description: Internal server error
- */
-router.post('/register', authController.register);
-/**
- * @swagger
- * /auth/logout:
- *   post:
- *     summary: User logout
- *     tags:
- *       - Authentication
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Logout successful
- *         headers:
- *           Set-Cookie:
- *             schema:
- *               type: string
- *               example: token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Logout successful.
- *       500:
- *         description: Internal server error
- */
-router.post('/logout', authenticate, authController.logout);
+  if (!token) {
+    return res.status(401).json({ message: 'Access token required' });
+  }
 
-module.exports = router;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, email: true, role: true, username: true }
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
+};
+
+// Middleware to check if user is admin
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+};
+
+// Login route
+router.post('/login', async (req, res) => {
+  try {
+    console.log('🔐 Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
+    
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      console.log('❌ Missing email or password');
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    console.log('👤 User found:', { 
+      found: !!user, 
+      email: user?.email, 
+      role: user?.role,
+      hasPassword: !!user?.password 
+    });
+
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if user is admin
+    if (user.role !== 'admin') {
+      console.log('❌ User is not admin, role:', user.role);
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    // Verify password
+    console.log('🔑 Verifying password...');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('🔑 Password verification result:', isValidPassword);
+    
+    if (!isValidPassword) {
+      console.log('❌ Invalid password');
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // Set JWT as HTTP-only cookie
+    res.cookie('admin_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    // Return user info (without password)
+    res.json({
+      message: 'Login successful',
+      user: {
+        user_id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Logout route
+router.post('/logout', (req, res) => {
+  res.clearCookie('admin_token');
+  res.json({ message: 'Logout successful' });
+});
+
+// Get current user info
+router.get('/me', authenticateToken, (req, res) => {
+  res.json({
+    user: {
+      user_id: req.user.id,
+      username: req.user.username,
+      email: req.user.email,
+      role: req.user.role
+    }
+  });
+});
+
+// Verify token route
+router.get('/verify', authenticateToken, (req, res) => {
+  res.json({ valid: true, user: req.user });
+});
+
+module.exports = { router, authenticateToken, requireAdmin };

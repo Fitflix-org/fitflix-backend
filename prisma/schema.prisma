@@ -3,346 +3,52 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model gym_amenities {
-  gym_id     String   @db.Uuid
-  amenity_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  icon_url   String?
-  name       String   @db.VarChar(100)
-  gyms       Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade, map: "fk_ga_gym")
-
-  @@unique([gym_id, name])
-}
-
-model payments {
-  payment_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id          String             @db.Uuid
-  amount           Decimal            @db.Decimal(10, 2)
-  payment_date     DateTime           @default(now()) @db.Timestamptz(6)
-  method           String?            @db.VarChar(50)
-  notes            String?
-  is_deleted       Boolean            @default(false)
-  created_at       DateTime           @default(now()) @db.Timestamptz(6)
-  status           PaymentStatusEnum?
-  users            User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_pay_user")
-  user_memberships user_memberships[]
-}
-
-model user_memberships {
-  user_membership_id   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id              String               @db.Uuid
-  start_date           DateTime             @db.Date
-  end_date             DateTime             @db.Date
-  payment_id           String?              @db.Uuid
-  created_at           DateTime             @default(now()) @db.Timestamptz(6)
-  is_deleted           Boolean              @default(false)
-  auto_renewal_enabled Boolean              @default(true)
-  digital_pass_code    String               @unique @db.VarChar(100)
-  is_active            Boolean              @default(true)
-  plan_id              String               @db.Uuid
-  updated_at           DateTime             @default(now()) @db.Timestamptz(6)
-  status               MembershipStatusEnum @default(not_started)
-  payments             payments?            @relation(fields: [payment_id], references: [payment_id], map: "fk_um_payment")
-  membership_plans     membership_plans     @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade)
-  users                User                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_um_user")
-}
-
-model user_profiles {
-  profile_id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id              String      @unique @db.Uuid
-  date_of_birth        DateTime?   @db.Date
-  first_name           String      @default("")
-  last_name            String      @default("")  
-  height_cm            Decimal?    @db.Decimal(5, 2)
-  weight_kg            Decimal?    @db.Decimal(5, 2)
-  created_at           DateTime    @default(now()) @db.Timestamptz(6)
-  is_deleted           Boolean     @default(false)
-  profile_picture_url  String?
-  allergies            String[]
-  dietary_preferences  String[]
-  primary_fitness_goal String?     @db.VarChar(100)
-  updated_at           DateTime    @default(now()) @db.Timestamptz(6)
-  gender               GenderEnum?
-  users                User        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_profile_user")
-}
-
-model Gym {
-  gym_id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                 String                 @db.VarChar(255)
-  address              String
-  latitude             Decimal                @db.Decimal(10, 7)
-  longitude            Decimal                @db.Decimal(10, 7)
-  phone_number         String?                @db.VarChar(20)
-  email                String?                @db.VarChar(255)
-  opening_time         DateTime               @db.Time(6)
-  closing_time         DateTime               @db.Time(6)
-  holiday_dates        DateTime[]             @db.Date
-  description          String?
-  created_at           DateTime               @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
-  is_deleted           Boolean                @default(false)
-  gym_amenities        gym_amenities[]
-  gym_classes_services gym_classes_services[]
-  gym_media            gym_media[]
-  gym_trial_passes     gym_trial_passes[]
-  membership_plans     membership_plans[]
-  offers               offers[]
+model Blog {
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title              String
+  slug               String      @unique
+  excerpt            String?
+  content            String
+  coverImage         String?
+  status             BlogStatus  @default(DRAFT)
+  metaTitle          String?
+  metaDescription    String?
+  metaKeywords       String?
+  publishedAt        DateTime?   @db.Timestamptz(6)
+  scheduledPublishAt DateTime?   @db.Timestamptz(6)
+  createdAt          DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime    @updatedAt @db.Timestamptz(6)
+  
+  // Author relationship
+  authorId           String      @db.Uuid
+  author             User        @relation(fields: [authorId], references: [id])
 }
 
 model User {
-  user_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email            String             @unique @db.VarChar(255)
-  password_hash    String
-  username         String             @unique @db.VarChar(100)
-  created_at       DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
-  is_deleted       Boolean            @default(false)
-  role             UserRoleEnum       @default(user)
-  gym_trial_passes gym_trial_passes[]
-  hydration_logs   hydration_logs[]
-  meals            meals[]
-  notifications    notifications[]
-  payments         payments[]
-  user_goals       user_goals[]
-  user_memberships user_memberships[]
-  user_profiles    user_profiles?
-  workouts         workouts[]
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique
+  username      String   @unique
+  password      String
+  role          String   @default("user")
+  firstName     String?
+  lastName      String?
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  
+  // Blog relationship
+  blogs         Blog[]
 }
 
-enum UserRoleEnum {
-  user
-  admin
-  staff
-}
-
-model exercises {
-  exercise_id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                  String            @unique @db.VarChar(255)
-  type                  String?           @db.VarChar(50)
-  description           String?
-  primary_muscle_groups String[]
-  equipment_needed      String[]
-  created_at            DateTime          @default(now()) @db.Timestamptz(6)
-  workout_entries       workout_entries[]
-}
-
-model faqs {
-  faq_id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  question    String
-  answer      String
-  category    String?  @db.VarChar(100)
-  order_index Int?
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime @default(now()) @db.Timestamptz(6)
-}
-
-model food_items {
-  food_item_id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                 String         @unique @db.VarChar(255)
-  description          String?
-  calories_per_100g    Decimal        @db.Decimal(7, 2)
-  protein_per_100g     Decimal        @db.Decimal(7, 2)
-  carbs_per_100g       Decimal        @db.Decimal(7, 2)
-  fat_per_100g         Decimal        @db.Decimal(7, 2)
-  common_portions_json Json?
-  barcode              String?        @unique @db.VarChar(100)
-  is_custom            Boolean        @default(false)
-  created_at           DateTime       @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime       @default(now()) @db.Timestamptz(6)
-  meal_entries         meal_entries[]
-}
-
-model gym_classes_services {
-  class_service_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id           String   @db.Uuid
-  name             String   @db.VarChar(255)
-  description      String?
-  duration_minutes Int?
-  price            Decimal? @db.Decimal(10, 2)
-  is_class         Boolean  @default(true)
-  created_at       DateTime @default(now()) @db.Timestamptz(6)
-  Gym              Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
-}
-
-model gym_media {
-  media_id     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id       String   @db.Uuid
-  url          String
-  media_type   String   @db.VarChar(50)
-  is_thumbnail Boolean  @default(false)
-  order_index  Int?
-  created_at   DateTime @default(now()) @db.Timestamptz(6)
-  Gym          Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
-}
-
-model gym_trial_passes {
-  pass_id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id           String   @db.Uuid
-  gym_id            String   @db.Uuid
-  issued_date       DateTime @default(now()) @db.Date
-  expiry_date       DateTime @db.Date
-  is_used           Boolean  @default(false)
-  digital_pass_code String   @unique @db.VarChar(100)
-  created_at        DateTime @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime @default(now()) @db.Timestamptz(6)
-  Gym               Gym      @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
-  User              User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-}
-
-model hydration_logs {
-  log_id     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String   @db.Uuid
-  log_date   DateTime @db.Date
-  amount_ml  Int
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  User       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-}
-
-model meal_entries {
-  entry_id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  meal_id           String     @db.Uuid
-  food_item_id      String     @db.Uuid
-  quantity          Decimal    @db.Decimal(7, 2)
-  unit              String     @db.VarChar(50)
-  calories_consumed Decimal?   @db.Decimal(7, 2)
-  protein_g         Decimal?   @db.Decimal(7, 2)
-  carbs_g           Decimal?   @db.Decimal(7, 2)
-  fat_g             Decimal?   @db.Decimal(7, 2)
-  created_at        DateTime   @default(now()) @db.Timestamptz(6)
-  food_items        food_items @relation(fields: [food_item_id], references: [food_item_id], onDelete: Cascade)
-  meals             meals      @relation(fields: [meal_id], references: [meal_id], onDelete: Cascade)
-}
-
-model meals {
-  meal_id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id         String         @db.Uuid
-  meal_date       DateTime       @db.Date
-  meal_time       DateTime       @db.Time(6)
-  meal_type       String         @db.VarChar(50)
-  notes           String?
-  total_calories  Decimal?       @db.Decimal(7, 2)
-  total_protein_g Decimal?       @db.Decimal(7, 2)
-  total_carbs_g   Decimal?       @db.Decimal(7, 2)
-  total_fat_g     Decimal?       @db.Decimal(7, 2)
-  created_at      DateTime       @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
-  meal_entries    meal_entries[]
-  User            User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-}
-
-model membership_plans {
-  plan_id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id               String             @db.Uuid
-  name                 String             @db.VarChar(255)
-  duration_months      Int
-  price                Decimal            @db.Decimal(10, 2)
-  description          String?
-  terms_conditions_url String?
-  created_at           DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime           @default(now()) @db.Timestamptz(6)
-  is_deleted           Boolean            @default(false)
-  Gym                  Gym                @relation(fields: [gym_id], references: [gym_id], onDelete: Cascade)
-  user_memberships     user_memberships[]
-}
-
-model notifications {
-  notification_id String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id         String                @db.Uuid
-  type            NotificationTypeEnum?
-  title           String                @db.VarChar(255)
-  message         String
-  related_id      String?               @db.Uuid
-  is_read         Boolean               @default(false)
-  sent_at         DateTime              @default(now()) @db.Timestamptz(6)
-  User            User                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-}
-
-model offers {
-  offer_id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title                 String   @db.VarChar(255)
-  description           String?
-  discount_percentage   Decimal? @db.Decimal(5, 2)
-  fixed_discount_amount Decimal? @db.Decimal(10, 2)
-  start_date            DateTime @db.Date
-  end_date              DateTime @db.Date
-  target_gym_id         String?  @db.Uuid
-  created_at            DateTime @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime @default(now()) @db.Timestamptz(6)
-  Gym                   Gym?     @relation(fields: [target_gym_id], references: [gym_id])
-}
-
-model user_goals {
-  goal_id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id       String    @db.Uuid
-  goal_type     String    @db.VarChar(100)
-  target_value  Decimal   @db.Decimal(10, 2)
-  current_value Decimal   @default(0.0) @db.Decimal(10, 2)
-  unit          String?   @db.VarChar(50)
-  start_date    DateTime  @default(now()) @db.Date
-  end_date      DateTime? @db.Date
-  is_completed  Boolean   @default(false)
-  created_at    DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
-  User          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-}
-
-model workout_entries {
-  entry_id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workout_id       String    @db.Uuid
-  exercise_id      String    @db.Uuid
-  sets             Int?
-  reps             Int?
-  weight_kg        Decimal?  @db.Decimal(7, 2)
-  duration_minutes Int?
-  distance_km      Decimal?  @db.Decimal(7, 2)
-  notes            String?
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  exercises        exercises @relation(fields: [exercise_id], references: [exercise_id], onDelete: Cascade)
-  workouts         workouts  @relation(fields: [workout_id], references: [workout_id], onDelete: Cascade)
-}
-
-model workouts {
-  workout_id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id               String            @db.Uuid
-  workout_date          DateTime          @db.Date
-  duration_minutes      Int
-  total_calories_burned Decimal?          @db.Decimal(7, 2)
-  notes                 String?
-  created_at            DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime          @default(now()) @db.Timestamptz(6)
-  workout_entries       workout_entries[]
-  User                  User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-}
-
-enum GenderEnum {
-  male
-  female
-  other
-}
-
-enum MembershipStatusEnum {
-  not_started
-  active
-  ended
-  expired
-  cancelled
-}
-
-enum NotificationTypeEnum {
-  offer
-  gym_announcement
-  workout_reminder
-  hydration_reminder
-  membership_renewal
-}
-
-enum PaymentStatusEnum {
-  success
-  pending
-  failed
-  refunded
-}
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+} 

@@ -4,60 +4,63 @@
 
 require('dotenv').config(); // Load environment variables at the very top
 const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-const cors = require('cors'); // Assuming you need CORS for frontend interaction
 
-// Import the main API router that aggregates all feature routes
-const apiRoutes = require('./index');
-
-
-// Import global middlewares
-const { authenticate } = require('./middlewares/auth.middleware'); // Your JWT verify middleware
-const errorHandler = require('./middlewares/errorHandler'); // Centralized error handler (you'll create/update this)
-// const validationMiddleware = require('./middlewares/validation.middleware'); // If you implement a global validation middleware
+// Import routes
+const { router: authRoutes } = require('./features/auth/auth.routes');
+const blogRoutes = require('./features/blog/blog.routes');
+const userRoutes = require('./features/user/user.routes');
 
 const app = express();
 
-// ---------------------------------------------------
-// Global Middlewares
-// ---------------------------------------------------
-
-// Enable CORS for all origins (adjust as needed for production security)
+// Middleware
+app.use(helmet());
 app.use(cors({
-  origin: 'http://localhost:8080',
-  credentials: true,
+  origin: [
+    process.env.ADMIN_DASHBOARD_URL || 'http://localhost:5173',
+    process.env.WEBSITE_URL || 'http://localhost:8080'
+  ],
+  credentials: true
 }));
-
-// Parse JSON request bodies
-app.use(express.json());
-
-// Parse URL-encoded request bodies (for form data)
-app.use(express.urlencoded({ extended: true }));
-
-// Parse cookies from incoming requests
+app.use(morgan('combined'));
 app.use(cookieParser());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ---------------------------------------------------
-// API Routes
-// ---------------------------------------------------
-
-// Mount the main API router under a '/api' prefix (common practice)
-app.use('/api', apiRoutes);
-
-
-// ---------------------------------------------------
-// Error Handling Middleware
-// ---------------------------------------------------
-// This should be the last middleware added.
-// It catches any errors thrown by previous middlewares or route handlers.
-app.use(errorHandler);
-
-// ---------------------------------------------------
-// Default Route for unmatched requests (404)
-// ---------------------------------------------------
-app.use((req, res, next) => {
-  res.status(404).json({ message: 'Not Found' });
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Fitflix Blog API is running',
+    timestamp: new Date().toISOString()
+  });
 });
 
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/blogs', blogRoutes);
+app.use('/api/users', userRoutes);
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('Global error:', error);
+  
+  res.status(error.status || 500).json({
+    success: false,
+    message: error.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+  });
+});
 
 module.exports = app;
