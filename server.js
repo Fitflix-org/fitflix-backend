@@ -1,3 +1,15 @@
+// Load environment variables first
+require('dotenv').config();
+
+// Debug environment variables
+console.log('🔍 Environment Debug:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
+  JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+  COOKIE_SECRET: process.env.COOKIE_SECRET ? 'SET' : 'NOT SET'
+});
+
 const app = require('./src/app');
 const cluster = require('cluster');
 const os = require('os');

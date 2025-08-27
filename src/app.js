@@ -21,6 +21,34 @@ const userRoutes = require('./features/user/user.routes');
 
 const app = express();
 
+// Trust proxy configuration for production (behind reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+  // Trust the first proxy (Render's load balancer)
+  app.set('trust proxy', 1);
+  console.log('🛡️ Trust proxy enabled for production');
+  
+  // Log proxy configuration for debugging
+  console.log('🔍 Proxy configuration:', {
+    trustProxy: app.get('trust proxy'),
+    environment: process.env.NODE_ENV,
+    nodeVersion: process.version
+  });
+  
+  // Add IP debugging middleware
+  app.use((req, res, next) => {
+    console.log('🌐 Request IP Debug:', {
+      path: req.path,
+      ip: req.ip,
+      xForwardedFor: req.headers['x-forwarded-for'],
+      xRealIp: req.headers['x-real-ip'],
+      connectionRemoteAddress: req.connection?.remoteAddress,
+      socketRemoteAddress: req.socket?.remoteAddress,
+      trustProxy: app.get('trust proxy')
+    });
+    next();
+  });
+}
+
 // HTTPS redirect for production
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
@@ -45,6 +73,17 @@ if (process.env.NODE_ENV === 'production') {
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // Disable X-Forwarded-For validation since we're handling it manually
+    validate: { xForwardedForHeader: false },
+    // Add key generator that works with proxy headers
+    keyGenerator: (req) => {
+      // Use X-Forwarded-For header if available, fallback to req.ip
+      const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
+      console.log('🔑 Rate limit key generated:', { clientIp, path: req.path });
+      return clientIp;
+    },
+    // Skip rate limiting for health checks
+    skip: (req) => req.path === '/health'
   });
   
   // Apply rate limiting to all routes
@@ -59,6 +98,15 @@ if (process.env.NODE_ENV === 'production') {
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // Disable X-Forwarded-For validation since we're handling it manually
+    validate: { xForwardedForHeader: false },
+    // Add key generator that works with proxy headers
+    keyGenerator: (req) => {
+      // Use X-Forwarded-For header if available, fallback to req.ip
+      const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
+      console.log('🔑 Auth rate limit key generated:', { clientIp, path: req.path });
+      return clientIp;
+    }
   });
   
   app.use('/api/auth', authLimiter);
@@ -200,6 +248,20 @@ if (process.env.NODE_ENV === 'production') {
       write: (message) => console.log(message.trim())
     }
   }));
+  
+  // Add custom logging for proxy debugging
+  app.use((req, res, next) => {
+    if (req.path === '/health') {
+      console.log('🏥 Health check request:', {
+        ip: req.ip,
+        xForwardedFor: req.headers['x-forwarded-for'],
+        xRealIp: req.headers['x-real-ip'],
+        userAgent: req.get('User-Agent'),
+        timestamp: new Date().toISOString()
+      });
+    }
+    next();
+  });
 } else {
   app.use(morgan('dev'));
 }
