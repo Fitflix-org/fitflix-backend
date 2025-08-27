@@ -2,7 +2,10 @@
 // This file sets up the main Express application, applies global middlewares,
 // and mounts the main API routes.
 
-require('dotenv').config(); // Load environment variables at the very top
+// Load environment variables only in development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');

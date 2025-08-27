@@ -13,7 +13,7 @@
     "testEnvironment": "node"
   },
   "scripts": {
-    "start": "cross-env NODE_ENV=production node server.js",
+    "start": "node server.js",
     "dev": "cross-env NODE_ENV=development nodemon server.js",
     "build": "prisma generate && prisma migrate deploy",
     "build:render": "npm install && prisma generate && prisma migrate deploy",

@@ -37,4 +37,4 @@ services:
       - key: RATE_LIMIT_MAX_REQUESTS
         value: "100"
       - key: NODE_VERSION
-        value: "18"
+        value: "22"

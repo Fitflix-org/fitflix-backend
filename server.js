@@ -1,5 +1,14 @@
-// Load environment variables first
-require('dotenv').config();
+// Load environment variables first (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+  console.log('📁 Loading .env file for development');
+}
+
+// Ensure NODE_ENV is set (fallback to production for safety)
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'production';
+  console.log('⚠️ NODE_ENV not set, defaulting to production');
+}
 
 // Debug environment variables
 console.log('🔍 Environment Debug:', {
@@ -7,7 +16,10 @@ console.log('🔍 Environment Debug:', {
   PORT: process.env.PORT,
   DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
   JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
-  COOKIE_SECRET: process.env.COOKIE_SECRET ? 'SET' : 'NOT SET'
+  COOKIE_SECRET: process.env.COOKIE_SECRET ? 'SET' : 'NOT SET',
+  NODE_VERSION: process.version,
+  PLATFORM: process.platform,
+  ARCH: process.arch
 });
 
 const app = require('./src/app');
