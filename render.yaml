@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: fitflix-backend-api
+    runtime: node
+    plan: starter
+    buildCommand: npm run build:render
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    pullRequestPreviewsEnabled: true
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: COOKIE_SECRET
+        sync: false
+      - key: ADMIN_DASHBOARD_URL
+        value: "https://fitflix-admin-dashboard.onrender.com"
+      - key: WEBSITE_URL
+        value: "https://fitflix-website.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://fitflix-website.onrender.com"
+      - key: CORS_ORIGIN
+        value: "https://fitflix-website.onrender.com"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
+      - key: NODE_VERSION
+        value: "18"

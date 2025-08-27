@@ -13,7 +13,7 @@
     "testEnvironment": "node"
   },
   "scripts": {
-    "start": "NODE_ENV=production node server.js",
+    "start": "cross-env NODE_ENV=production node server.js",
     "dev": "cross-env NODE_ENV=development nodemon server.js",
     "build": "prisma generate && prisma migrate deploy",
     "build:render": "npm install && prisma generate && prisma migrate deploy",
@@ -28,7 +28,9 @@
     "db:seed:admin": "node prisma/seed-admin.js",
     "db:test:migrate": "cross-env NODE_ENV=test npx prisma migrate deploy",
     "db:test:reset": "cross-env NODE_ENV=test npx prisma migrate reset --force",
-    "db:generate": "npx prisma generate"
+    "db:generate": "npx prisma generate",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed:prod": "NODE_ENV=production node prisma/seed-admin.js"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",

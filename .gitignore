@@ -17,6 +17,9 @@ logs/
 .env.production
 .env.local
 .env.*.local
+.env.example
+.env.render.corrected
+
 
 # Build output
 dist/

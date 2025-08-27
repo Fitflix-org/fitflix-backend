@@ -262,7 +262,7 @@ const getSecureCookieOptions = (req) => ({
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'Fitflix Blog API is running',
+    message: 'Fitflix Backend is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     cors: {
