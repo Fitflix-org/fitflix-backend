@@ -130,4 +130,17 @@ router.patch('/:id/unschedule',
   unschedulePublishing
 );
 
+// Debug: Log route registration
+console.log('📝 Blog routes registered:');
+console.log('  - GET /status/:status');
+console.log('  - GET /slug/:slug');
+console.log('  - GET /:id');
+console.log('  - POST /');
+console.log('  - PUT /:id');
+console.log('  - DELETE /:id');
+console.log('  - PATCH /:id/publish');
+console.log('  - PATCH /:id/draft');
+console.log('  - PATCH /:id/schedule');
+console.log('  - PATCH /:id/unschedule');
+
 module.exports = router;

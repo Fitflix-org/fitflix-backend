@@ -178,6 +178,9 @@ app.use(helmet({
 // CORS configuration for production
 const allowedOrigins = process.env.NODE_ENV === 'production' 
   ? [
+      // Parse CORS_ORIGIN from environment variable
+      ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
+      // Fallback to individual environment variables if CORS_ORIGIN is not set
       process.env.ADMIN_DASHBOARD_URL,
       process.env.WEBSITE_URL,
       process.env.FRONTEND_URL,
@@ -191,6 +194,24 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       'http://localhost:3000'  // Allow local backend
     ];
 
+// Log CORS configuration for debugging
+console.log('🌐 CORS Configuration:', {
+  environment: process.env.NODE_ENV,
+  corsOrigin: process.env.CORS_ORIGIN,
+  allowedOrigins: allowedOrigins,
+  totalOrigins: allowedOrigins.length
+});
+
+// Validate CORS origins
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.CORS_ORIGIN) {
+    console.warn('⚠️ CORS_ORIGIN environment variable not set in production');
+  } else {
+    const parsedOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+    console.log('🔍 Parsed CORS origins:', parsedOrigins);
+  }
+}
+
 // Enhanced CORS configuration with better error handling
 app.use(cors({
   origin: function (origin, callback) {
@@ -203,6 +224,7 @@ app.use(cors({
     // Log CORS attempts for debugging
     console.log(`🌐 CORS check for origin: ${origin}`);
     console.log(`🌐 Allowed origins:`, allowedOrigins);
+    console.log(`🌐 CORS_ORIGIN env var:`, process.env.CORS_ORIGIN);
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       console.log(`✅ CORS allowed for: ${origin}`);
@@ -332,13 +354,18 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV,
     cors: {
       allowedOrigins: allowedOrigins.length,
-      production: process.env.NODE_ENV === 'production'
+      production: process.env.NODE_ENV === 'production',
+      corsOrigin: process.env.CORS_ORIGIN,
+      origins: allowedOrigins
     }
   });
 });
 
 // Request validation middleware
 app.use((req, res, next) => {
+  // Log all requests for debugging
+  console.log(`🌐 ${req.method} ${req.url} - Origin: ${req.get('Origin') || 'No Origin'}`);
+  
   // Validate request size
   const contentLength = parseInt(req.headers['content-length'] || '0');
   if (contentLength > 10 * 1024 * 1024) { // 10MB limit
@@ -367,11 +394,42 @@ app.use('/api/auth', authRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/users', userRoutes);
 
+// Debug: Log all registered routes
+console.log('🚀 Registered API Routes:');
+console.log('  - /api/auth/*');
+console.log('  - /api/blogs/*');
+console.log('  - /api/users/*');
+console.log('  - /health');
+
+// Debug: Test route registration
+app.get('/test-routes', (req, res) => {
+  res.json({
+    message: 'Routes test endpoint',
+    availableRoutes: [
+      '/api/auth/*',
+      '/api/blogs/*', 
+      '/api/users/*',
+      '/health'
+    ],
+    testUrls: [
+      '/api/blogs/status/PUBLISHED',
+      '/api/blogs',
+      '/api/auth/login'
+    ]
+  });
+});
+
 // 404 handler
 app.use('*', (req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.url}`);
+  console.log(`🔍 Available routes: /api/auth/*, /api/blogs/*, /api/users/*, /health`);
+  
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'Route not found',
+    requestedUrl: req.url,
+    method: req.method,
+    availableRoutes: ['/api/auth/*', '/api/blogs/*', '/api/users/*', '/health']
   });
 });
 

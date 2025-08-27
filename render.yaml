@@ -31,7 +31,7 @@ services:
       - key: FRONTEND_URL
         value: "https://fitflix-website.onrender.com"
       - key: CORS_ORIGIN
-        value: "https://fitflix-website.onrender.com"
+        value: "https://fitflix-website.onrender.com,https://fitflix-admin-dashboard.onrender.com,https://fitflix.in"
       - key: RATE_LIMIT_WINDOW_MS
         value: "900000"
       - key: RATE_LIMIT_MAX_REQUESTS
