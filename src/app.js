@@ -17,12 +17,19 @@ const hpp = require('hpp'); // HTTP Parameter Pollution protection
 const mongoSanitize = require('express-mongo-sanitize'); // MongoDB injection protection
 const xss = require('xss-clean'); // XSS protection
 
+// Import security configuration
+const securityConfig = require('./config/security');
+
 // Import routes
 const { router: authRoutes } = require('./features/auth/auth.routes');
 const blogRoutes = require('./features/blog/blog.routes');
 const userRoutes = require('./features/user/user.routes');
+const leadRoutes = require('./features/leads/leads.routes');
 
 const app = express();
+
+
+
 
 // Trust proxy configuration for production (behind reverse proxy)
 if (process.env.NODE_ENV === 'production') {
@@ -69,13 +76,7 @@ if (process.env.NODE_ENV === 'production') {
 // Rate limiting for production
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: {
-      error: 'Too many requests from this IP, please try again later.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
+    ...securityConfig.rateLimit,
     // Disable X-Forwarded-For validation since we're handling it manually
     validate: { xForwardedForHeader: false },
     // Add key generator that works with proxy headers
@@ -94,13 +95,11 @@ if (process.env.NODE_ENV === 'production') {
   
   // Stricter rate limiting for auth routes
   const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 requests per windowMs
+    ...securityConfig.rateLimit,
+    max: securityConfig.rateLimit.authMax,
     message: {
       error: 'Too many authentication attempts, please try again later.'
     },
-    standardHeaders: true,
-    legacyHeaders: false,
     // Disable X-Forwarded-For validation since we're handling it manually
     validate: { xForwardedForHeader: false },
     // Add key generator that works with proxy headers
@@ -115,64 +114,10 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/auth', authLimiter);
 }
 
-// Production-ready middleware configuration with improved CSP
+// Production-ready middleware configuration with enhanced security headers
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: [
-        "'self'", 
-        "'unsafe-inline'", 
-        "https:",
-        "https://fonts.googleapis.com",
-        "https://fonts.gstatic.com"
-      ],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'", // Needed for some frontend frameworks
-        "https://www.google-analytics.com",
-        "https://www.googletagmanager.com"
-      ],
-      imgSrc: [
-        "'self'", 
-        "data:", 
-        "https:",
-        "https://images.unsplash.com",
-        "https://lh3.googleusercontent.com",
-        "https://www.google-analytics.com"
-      ],
-      connectSrc: [
-        "'self'",
-        "https://api.fitflix.in",
-        "https://fitflix-backend-avxt.onrender.com",
-        "https://www.google-analytics.com",
-        "https://www.googletagmanager.com"
-      ],
-      fontSrc: [
-        "'self'", 
-        "https:",
-        "https://fonts.gstatic.com",
-        "https://fonts.googleapis.com"
-      ],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'", "https:"],
-      frameSrc: ["'none'"],
-      workerSrc: ["'self'", "blob:"],
-      manifestSrc: ["'self'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
-    },
-    reportOnly: false, // Set to true for testing CSP
-  },
-  crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-  hsts: {
-    maxAge: 31536000, // 1 year
-    includeSubDomains: true,
-    preload: true
-  }
+  contentSecurityPolicy: securityConfig.csp,
+  ...securityConfig.helmet
 }));
 
 // CORS configuration for production
@@ -238,18 +183,7 @@ app.use(cors({
       callback(error);
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Cache-Control'
-  ],
-  exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
-  maxAge: 86400, // Cache preflight for 24 hours
+  ...securityConfig.cors
 }));
 
 // Handle CORS preflight errors gracefully
@@ -291,13 +225,15 @@ if (process.env.NODE_ENV === 'production') {
   app.use(morgan('dev'));
 }
 
-// Security headers middleware
+// Enhanced security headers middleware with COOP/COEP
 app.use((req, res, next) => {
-  // Additional security headers
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  // Set all custom security headers from configuration
+  Object.entries(securityConfig.customHeaders).forEach(([header, value]) => {
+    res.setHeader(header, value);
+  });
+  
+  // Enhanced Permissions Policy
+  res.setHeader('Permissions-Policy', securityConfig.permissionsPolicy);
   
   // Remove server information
   res.removeHeader('X-Powered-By');
@@ -305,17 +241,41 @@ app.use((req, res, next) => {
   next();
 });
 
-// Security middleware stack
+// Enhanced security middleware stack
 app.use(hpp()); // Prevent HTTP Parameter Pollution
 app.use(xss()); // Prevent XSS attacks
 app.use(mongoSanitize()); // Prevent NoSQL injection
+
+// Additional security middleware for deprecated APIs and enhanced protection
+app.use((req, res, next) => {
+  // Block requests with suspicious headers
+  securityConfig.blockedPatterns.headers.forEach(header => {
+    if (req.headers[header]) {
+      console.warn(`🚨 Suspicious header detected: ${header}`);
+      delete req.headers[header];
+    }
+  });
+  
+  // Block requests with suspicious query parameters
+  const url = req.url.toLowerCase();
+  
+  if (securityConfig.blockedPatterns.urlParams.some(param => url.includes(param))) {
+    console.warn(`🚨 Suspicious URL parameter detected: ${req.url}`);
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid request parameters'
+    });
+  }
+  
+  next();
+});
 
 // Cookie parser with security options
 app.use(cookieParser(process.env.COOKIE_SECRET || 'default-secret'));
 
 // Body parsing with security limits
 app.use(express.json({ 
-  limit: '10mb',
+  limit: securityConfig.requestValidation.maxSize,
   verify: (req, res, buf) => {
     try {
       JSON.parse(buf);
@@ -330,35 +290,48 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ 
   extended: true, 
-  limit: '10mb',
-  parameterLimit: 100 // Limit number of parameters
+  limit: securityConfig.requestValidation.maxSize,
+  parameterLimit: securityConfig.requestValidation.parameterLimit
 }));
 
 // Secure cookie configuration
 const getSecureCookieOptions = (req) => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  domain: process.env.NODE_ENV === 'production' ? '.fitflix.in' : undefined,
-  path: '/',
-  signed: true
+  ...securityConfig.cookie
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'Fitflix Backend is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    cors: {
-      allowedOrigins: allowedOrigins.length,
-      production: process.env.NODE_ENV === 'production',
-      corsOrigin: process.env.CORS_ORIGIN,
-      origins: allowedOrigins
+app.get('/health', async (req, res) => {
+  try {
+    // Get scheduler status if available
+    let schedulerStatus = null;
+    try {
+      const blogScheduler = require('./features/blog/blog.scheduler');
+      schedulerStatus = await blogScheduler.getStatus();
+    } catch (error) {
+      schedulerStatus = { error: 'Scheduler not available' };
     }
-  });
+
+    res.json({
+      status: 'OK',
+      message: 'Fitflix Backend is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      scheduler: schedulerStatus,
+      cors: {
+        allowedOrigins: allowedOrigins.length,
+        production: process.env.NODE_ENV === 'production',
+        corsOrigin: process.env.CORS_ORIGIN,
+        origins: allowedOrigins
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Request validation middleware
@@ -368,20 +341,22 @@ app.use((req, res, next) => {
   
   // Validate request size
   const contentLength = parseInt(req.headers['content-length'] || '0');
-  if (contentLength > 10 * 1024 * 1024) { // 10MB limit
+  if (contentLength > securityConfig.requestValidation.maxSize) {
     return res.status(413).json({
       success: false,
       message: 'Request entity too large',
-      maxSize: '10MB'
+      maxSize: `${securityConfig.requestValidation.maxSize / (1024 * 1024)}MB`
     });
   }
   
   // Validate content type for POST/PUT requests
   if ((req.method === 'POST' || req.method === 'PUT') && req.headers['content-type']) {
-    if (!req.headers['content-type'].includes('application/json')) {
+    if (!securityConfig.requestValidation.allowedContentTypes.some(type => 
+      req.headers['content-type'].includes(type)
+    )) {
       return res.status(400).json({
         success: false,
-        message: 'Content-Type must be application/json'
+        message: `Content-Type must be one of: ${securityConfig.requestValidation.allowedContentTypes.join(', ')}`
       });
     }
   }
@@ -393,13 +368,17 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/leads', leadRoutes);
 
 // Debug: Log all registered routes
 console.log('🚀 Registered API Routes:');
 console.log('  - /api/auth/*');
 console.log('  - /api/blogs/*');
 console.log('  - /api/users/*');
+console.log('  - /api/leads/*');
 console.log('  - /health');
+console.log('  - /security-test');
+console.log('  - /test-routes');
 
 // Debug: Test route registration
 app.get('/test-routes', (req, res) => {
@@ -409,27 +388,57 @@ app.get('/test-routes', (req, res) => {
       '/api/auth/*',
       '/api/blogs/*', 
       '/api/users/*',
+      '/api/leads/*',
       '/health'
     ],
     testUrls: [
       '/api/blogs/status/PUBLISHED',
       '/api/blogs',
-      '/api/auth/login'
+      '/api/auth/login',
+      '/api/leads'
     ]
+  });
+});
+
+// Security headers test endpoint
+app.get('/security-test', (req, res) => {
+  res.json({
+    message: 'Security headers test endpoint',
+    security: {
+      csp: 'Content Security Policy is active',
+      hsts: 'HTTP Strict Transport Security is active',
+      coop: 'Cross-Origin-Opener-Policy is active',
+      coep: 'Cross-Origin-Embedder-Policy is active',
+      frameOptions: 'X-Frame-Options is set to DENY',
+      clickjacking: 'Protected against clickjacking',
+      xss: 'XSS protection is active',
+      permissions: 'Permissions Policy is configured'
+    },
+    headers: {
+      'content-security-policy': res.getHeader('content-security-policy'),
+      'strict-transport-security': res.getHeader('strict-transport-security'),
+      'cross-origin-opener-policy': res.getHeader('cross-origin-opener-policy'),
+      'cross-origin-embedder-policy': res.getHeader('cross-origin-embedder-policy'),
+      'x-frame-options': res.getHeader('x-frame-options'),
+      'x-content-type-options': res.getHeader('x-content-type-options'),
+      'x-xss-protection': res.getHeader('x-xss-protection'),
+      'permissions-policy': res.getHeader('permissions-policy')
+    },
+    timestamp: new Date().toISOString()
   });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
   console.log(`❌ 404 - Route not found: ${req.method} ${req.url}`);
-  console.log(`🔍 Available routes: /api/auth/*, /api/blogs/*, /api/users/*, /health`);
+  console.log(`🔍 Available routes: /api/auth/*, /api/blogs/*, /api/users/*, /api/leads/*, /health`);
   
   res.status(404).json({
     success: false,
     message: 'Route not found',
     requestedUrl: req.url,
     method: req.method,
-    availableRoutes: ['/api/auth/*', '/api/blogs/*', '/api/users/*', '/health']
+    availableRoutes: ['/api/auth/*', '/api/blogs/*', '/api/users/*', '/api/leads/*', '/health']
   });
 });
 

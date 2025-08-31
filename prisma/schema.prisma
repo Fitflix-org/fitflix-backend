@@ -9,41 +9,51 @@ datasource db {
 }
 
 model Blog {
-  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title              String
-  slug               String      @unique
+  slug               String     @unique
   excerpt            String?
   content            String
   coverImage         String?
-  status             BlogStatus  @default(DRAFT)
+  status             BlogStatus @default(DRAFT)
   metaTitle          String?
   metaDescription    String?
   metaKeywords       String?
-  publishedAt        DateTime?   @db.Timestamptz(6)
-  scheduledPublishAt DateTime?   @db.Timestamptz(6)
-  createdAt          DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt          DateTime    @updatedAt @db.Timestamptz(6)
-  
-  // Author relationship
-  authorId           String      @db.Uuid
-  author             User        @relation(fields: [authorId], references: [id])
+  scheduledPublishAt DateTime?  @db.Timestamptz(6)
+  createdAt          DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime   @updatedAt @db.Timestamptz(6)
+  publishedAt        DateTime?  @db.Timestamptz(6)
+  authorId           String     @db.Uuid
+  author             User       @relation(fields: [authorId], references: [id])
 }
 
 model User {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email         String   @unique
   username      String   @unique
-  password      String
-  role          String   @default("user")
-  firstName     String?
-  lastName      String?
-  isActive      Boolean  @default(true)
-  emailVerified Boolean  @default(false)
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime @updatedAt @db.Timestamptz(6)
-  
-  // Blog relationship
+  emailVerified Boolean  @default(false)
+  firstName     String?
+  isActive      Boolean  @default(true)
+  lastName      String?
+  role          String   @default("user")
+  password      String
   blogs         Blog[]
+}
+
+model Lead {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String?
+  phone     String
+  location  String?
+  source    String
+  interest  String?
+  status    LeadStatus @default(NEW)
+  notes     String?
+  createdAt DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime   @updatedAt @db.Timestamptz(6)
 }
 
 enum BlogStatus {
@@ -51,4 +61,12 @@ enum BlogStatus {
   PUBLISHED
   SCHEDULED
   ARCHIVED
-} 
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  CONVERTED
+  LOST
+}

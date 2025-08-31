@@ -20,7 +20,7 @@ const validate = (schema) => {
       req.validatedData = validatedData;
       next();
     } catch (error) {
-      if (error.name === 'ZodError') {
+      if (error.name === 'ZodError' && error.errors && Array.isArray(error.errors)) {
         const validationErrors = error.errors.map(err => ({
           field: err.path.join('.'),
           message: err.message
@@ -32,7 +32,14 @@ const validate = (schema) => {
           errors: validationErrors
         });
       }
-      next(error);
+      
+      // Handle other types of errors
+      console.error('Validation error:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request data',
+        error: error.message || 'Unknown validation error'
+      });
     }
   };
 };

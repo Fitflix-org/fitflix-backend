@@ -23,6 +23,7 @@ console.log('🔍 Environment Debug:', {
 });
 
 const app = require('./src/app');
+const blogScheduler = require('./src/features/blog/blog.scheduler');
 const cluster = require('cluster');
 const os = require('os');
 
@@ -57,6 +58,20 @@ if (NODE_ENV === 'production' && cluster.isMaster) {
     console.log(`🚀 FitFlix Backend Server running on port ${PORT}${workerInfo}`);
     console.log(`🌍 Environment: ${NODE_ENV}`);
     console.log(`⏰ Started at: ${new Date().toISOString()}`);
+    
+    // Start the blog scheduler automatically
+    console.log('🚀 Starting blog scheduler...');
+    blogScheduler.start();
+    
+    // Log scheduler status after a delay
+    setTimeout(async () => {
+      try {
+        const status = await blogScheduler.getStatus();
+        console.log('📅 Blog Scheduler Status:', status);
+      } catch (error) {
+        console.error('❌ Error getting scheduler status:', error);
+      }
+    }, 2000);
     
     if (NODE_ENV === 'production') {
       console.log('🔒 Production mode enabled');

@@ -212,7 +212,7 @@ const unschedulePublishing = asyncHandler(async (req, res) => {
 
 // Get scheduler status
 const getSchedulerStatus = asyncHandler(async (req, res) => {
-  const status = blogScheduler.getStatus();
+  const status = await blogScheduler.getStatus();
   
   res.json({
     success: true,
