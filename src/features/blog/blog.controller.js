@@ -7,16 +7,6 @@ const prisma = new PrismaClient();
 // Get all blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
   const blogs = await prisma.blog.findMany({
-    include: {
-      author: {
-        select: {
-          id: true,
-          username: true,
-          firstName: true,
-          lastName: true
-        }
-      }
-    },
     orderBy: {
       createdAt: 'desc'
     }

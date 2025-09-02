@@ -27,11 +27,71 @@ const createLead = async (req, res) => {
       }
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Lead created successfully',
-      data: lead
-    });
+    // Forward to Google Apps Script sheet webhook based on branch/corporate
+    try {
+      const debug = process.env.DEBUG_LEADS_FORWARDING === 'true';
+      if (debug) console.log('[Leads] Incoming lead body:', { name, email, phone, location, source, interest });
+
+      const isCorporate = (source || '').toLowerCase() === 'corporate-wellness' || (interest || '').toLowerCase().includes('corporate');
+      const sheetsWebhook = isCorporate
+        ? process.env.GSHEET_WEBHOOK_CORPORATE
+        : (() => {
+            const loc = (location || '').toLowerCase();
+            if (loc.includes('electronic') || loc.includes('ec')) return process.env.GSHEET_WEBHOOK_EC;
+            if (loc.includes('marathahalli')) return process.env.GSHEET_WEBHOOK_MARATHAHALLI;
+            if (loc.includes('brookefield') || loc.includes('aecs') || loc.includes('whitefield')) return process.env.GSHEET_WEBHOOK_BROOKEFIELD;
+            if (loc.includes('iti')) return process.env.GSHEET_WEBHOOK_ITI_LAYOUT;
+            return process.env.GSHEET_WEBHOOK_DEFAULT;
+          })();
+
+      if (debug) console.log('[Leads] isCorporate:', isCorporate, ' webhook:', sheetsWebhook || '(none)');
+
+      if (sheetsWebhook) {
+        let fetchFn = globalThis.fetch;
+        if (!fetchFn) {
+          try {
+            fetchFn = (await import('node-fetch')).default;
+            if (debug) console.log('[Leads] Using node-fetch fallback');
+          } catch (e) {
+            console.warn('[Leads] Fetch not available and node-fetch not installed. Skipping Google Sheets forward.');
+          }
+        } else if (debug) {
+          console.log('[Leads] Using global fetch');
+        }
+
+        if (fetchFn) {
+          const payload = {
+            id: lead.id,
+            name,
+            email,
+            phone,
+            location,
+            source,
+            interest,
+            status: lead.status,
+            createdAt: lead.createdAt,
+          };
+          if (debug) console.log('[Leads] Forwarding payload:', payload);
+          try {
+            const resp = await fetchFn(sheetsWebhook, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const text = await resp.text();
+            if (debug) console.log('[Leads] Sheets response status:', resp.status, 'body:', text);
+          } catch (err) {
+            console.error('[Leads] Error forwarding to Sheets:', err.message);
+          }
+        }
+      } else if (debug) {
+        console.log('[Leads] No webhook configured for this lead. Set GSHEET_WEBHOOK_* envs.');
+      }
+    } catch (e) {
+      console.error('[Leads] Apps Script forward failed:', e.message);
+    }
+
+    res.status(201).json({ success: true, message: 'Lead created successfully', data: lead });
   } catch (error) {
     console.error('Error creating lead:', error);
     res.status(500).json({

@@ -8,10 +8,14 @@ const prisma = new PrismaClient();
 
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
-  const token = req.cookies.admin_token || req.headers.authorization?.split(' ')[1];
+  // Only use HTTP-only cookies for security
+  const token = req.cookies.admin_token;
 
   if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
+    return res.status(401).json({ 
+      message: 'Access token required',
+      code: 'NO_TOKEN'
+    });
   }
 
   try {
@@ -92,12 +96,14 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Set JWT as HTTP-only cookie
+    // Set JWT as HTTP-only cookie with enhanced security
     res.cookie('admin_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      httpOnly: true,                    // Prevent XSS attacks
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'strict',               // CSRF protection
+      maxAge: 24 * 60 * 60 * 1000,     // 24 hours
+      path: '/',                        // Explicit path
+      domain: process.env.NODE_ENV === 'production' ? '.fitflix.in' : undefined // Subdomain support
     });
 
     // Return user info (without password)
@@ -118,8 +124,19 @@ router.post('/login', async (req, res) => {
 
 // Logout route
 router.post('/logout', (req, res) => {
-  res.clearCookie('admin_token');
-  res.json({ message: 'Logout successful' });
+  // Clear cookie with same security settings as login
+  res.clearCookie('admin_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    domain: process.env.NODE_ENV === 'production' ? '.fitflix.in' : undefined
+  });
+  
+  res.json({ 
+    message: 'Logout successful',
+    code: 'LOGOUT_SUCCESS'
+  });
 });
 
 // Get current user info

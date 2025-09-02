@@ -8,17 +8,17 @@ const blogStatusSchema = z.enum(['DRAFT', 'PUBLISHED', 'SCHEDULED', 'ARCHIVED'])
 
 // Create blog validation schema
 const createBlogSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
-  slug: z.string().min(1, 'Slug is required').max(100, 'Slug must be less than 100 characters')
+  title: z.string().min(1, 'Title is required').max(500, 'Title must be less than 500 characters'),
+  slug: z.string().min(1, 'Slug is required').max(200, 'Slug must be less than 200 characters')
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
-  excerpt: z.string().max(500, 'Excerpt must be less than 500 characters').optional(),
+  excerpt: z.string().max(1000, 'Excerpt must be less than 1000 characters').optional(),
   content: z.string().min(1, 'Content is required'),
   coverImage: z.string().url('Invalid cover image URL').optional(),
   status: blogStatusSchema.optional().default('DRAFT'),
   scheduledPublishAt: z.string().datetime('Invalid date format').optional(),
-  metaTitle: z.string().max(60, 'Meta title must be less than 60 characters').optional(),
-  metaDescription: z.string().max(160, 'Meta description must be less than 160 characters').optional(),
-  metaKeywords: z.string().max(200, 'Meta keywords must be less than 200 characters').optional()
+  metaTitle: z.string().max(120, 'Meta title must be less than 120 characters').optional(),
+  metaDescription: z.string().max(320, 'Meta description must be less than 320 characters').optional(),
+  metaKeywords: z.string().max(500, 'Meta keywords must be less than 500 characters').optional()
 });
 
 // Update blog validation schema

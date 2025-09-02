@@ -23,8 +23,6 @@ model Blog {
   createdAt          DateTime   @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime   @updatedAt @db.Timestamptz(6)
   publishedAt        DateTime?  @db.Timestamptz(6)
-  authorId           String     @db.Uuid
-  author             User       @relation(fields: [authorId], references: [id])
 }
 
 model User {
@@ -39,7 +37,6 @@ model User {
   lastName      String?
   role          String   @default("user")
   password      String
-  blogs         Blog[]
 }
 
 model Lead {

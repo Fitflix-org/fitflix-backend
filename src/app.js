@@ -20,6 +20,9 @@ const xss = require('xss-clean'); // XSS protection
 // Import security configuration
 const securityConfig = require('./config/security');
 
+// Import middlewares
+const subdomainRedirect = require('./middlewares/subdomainRedirect');
+
 // Import routes
 const { router: authRoutes } = require('./features/auth/auth.routes');
 const blogRoutes = require('./features/blog/blog.routes');
@@ -28,8 +31,8 @@ const leadRoutes = require('./features/leads/leads.routes');
 
 const app = express();
 
-
-
+// Apply subdomain redirect middleware early in the stack
+app.use(subdomainRedirect);
 
 // Trust proxy configuration for production (behind reverse proxy)
 if (process.env.NODE_ENV === 'production') {
