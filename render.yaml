@@ -8,6 +8,10 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     pullRequestPreviewsEnabled: true
+    disk:
+      name: fitflix-backend-disk
+      mountPath: /app/logs
+      sizeGB: 1
     
     envVars:
       - key: NODE_ENV
@@ -38,3 +42,9 @@ services:
         value: "100"
       - key: NODE_VERSION
         value: "22"
+      - key: DEBUG_LOGS
+        value: "false"
+      - key: LOG_LEVEL
+        value: "info"
+      - key: ENABLE_METRICS
+        value: "true"

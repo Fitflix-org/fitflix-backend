@@ -16,7 +16,9 @@ const subdomainRedirect = (req, res, next) => {
   if (hostname === 'blogs.fitflix.in') {
     // Only redirect if we're on the root path "/"
     if (req.path === '/') {
-      console.log(`Subdomain redirect: ${hostname}${req.path} -> /blogs`);
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+        console.log(`Subdomain redirect: ${hostname}${req.path} -> /blogs`);
+      }
       
       // Perform a 301 permanent redirect to /blogs
       return res.redirect(301, '/blogs');

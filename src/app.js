@@ -22,12 +22,14 @@ const securityConfig = require('./config/security');
 
 // Import middlewares
 const subdomainRedirect = require('./middlewares/subdomainRedirect');
+const { productionLogging, errorMonitoring, performanceMonitoring, getHealthMetrics } = require('./middlewares/productionMonitoring');
 
 // Import routes
 const { router: authRoutes } = require('./features/auth/auth.routes');
 const blogRoutes = require('./features/blog/blog.routes');
 const userRoutes = require('./features/user/user.routes');
 const leadRoutes = require('./features/leads/leads.routes');
+const eventRoutes = require('./features/events/event.routes');
 
 const app = express();
 
@@ -38,28 +40,28 @@ app.use(subdomainRedirect);
 if (process.env.NODE_ENV === 'production') {
   // Trust the first proxy (Render's load balancer)
   app.set('trust proxy', 1);
-  console.log('🛡️ Trust proxy enabled for production');
-  
-  // Log proxy configuration for debugging
-  console.log('🔍 Proxy configuration:', {
-    trustProxy: app.get('trust proxy'),
-    environment: process.env.NODE_ENV,
-    nodeVersion: process.version
-  });
-  
-  // Add IP debugging middleware
-  app.use((req, res, next) => {
-    console.log('🌐 Request IP Debug:', {
-      path: req.path,
-      ip: req.ip,
-      xForwardedFor: req.headers['x-forwarded-for'],
-      xRealIp: req.headers['x-real-ip'],
-      connectionRemoteAddress: req.connection?.remoteAddress,
-      socketRemoteAddress: req.socket?.remoteAddress,
-      trustProxy: app.get('trust proxy')
+  if (process.env.DEBUG_LOGS === 'true') {
+    console.log('🛡️ Trust proxy enabled for production');
+    console.log('🔍 Proxy configuration:', {
+      trustProxy: app.get('trust proxy'),
+      environment: process.env.NODE_ENV,
+      nodeVersion: process.version
     });
-    next();
-  });
+
+    // Add IP debugging middleware (only when explicitly enabled)
+    app.use((req, res, next) => {
+      console.log('🌐 Request IP Debug:', {
+        path: req.path,
+        ip: req.ip,
+        xForwardedFor: req.headers['x-forwarded-for'],
+        xRealIp: req.headers['x-real-ip'],
+        connectionRemoteAddress: req.connection?.remoteAddress,
+        socketRemoteAddress: req.socket?.remoteAddress,
+        trustProxy: app.get('trust proxy')
+      });
+      next();
+    });
+  }
 }
 
 // HTTPS redirect for production
@@ -86,7 +88,9 @@ if (process.env.NODE_ENV === 'production') {
     keyGenerator: (req) => {
       // Use X-Forwarded-For header if available, fallback to req.ip
       const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
-      console.log('🔑 Rate limit key generated:', { clientIp, path: req.path });
+      if (process.env.DEBUG_LOGS === 'true') {
+        console.log('🔑 Rate limit key generated:', { clientIp, path: req.path });
+      }
       return clientIp;
     },
     // Skip rate limiting for health checks
@@ -109,7 +113,9 @@ if (process.env.NODE_ENV === 'production') {
     keyGenerator: (req) => {
       // Use X-Forwarded-For header if available, fallback to req.ip
       const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
-      console.log('🔑 Auth rate limit key generated:', { clientIp, path: req.path });
+      if (process.env.DEBUG_LOGS === 'true') {
+        console.log('🔑 Auth rate limit key generated:', { clientIp, path: req.path });
+      }
       return clientIp;
     }
   });
@@ -138,23 +144,26 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
   : [
       process.env.ADMIN_DASHBOARD_URL || 'http://localhost:5173',
       process.env.WEBSITE_URL || 'http://localhost:8080',
+      'http://localhost:5173', // Explicitly allow local Vite default
       'http://localhost:8080', // Explicitly allow local frontend
       'http://localhost:3000'  // Allow local backend
     ];
 
-// Log CORS configuration for debugging
-console.log('🌐 CORS Configuration:', {
-  environment: process.env.NODE_ENV,
-  corsOrigin: process.env.CORS_ORIGIN,
-  allowedOrigins: allowedOrigins,
-  totalOrigins: allowedOrigins.length
-});
+// Log CORS configuration only in development or when explicitly enabled
+if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+  console.log('🌐 CORS Configuration:', {
+    environment: process.env.NODE_ENV,
+    corsOrigin: process.env.CORS_ORIGIN,
+    allowedOrigins: allowedOrigins,
+    totalOrigins: allowedOrigins.length
+  });
+}
 
 // Validate CORS origins
 if (process.env.NODE_ENV === 'production') {
   if (!process.env.CORS_ORIGIN) {
     console.warn('⚠️ CORS_ORIGIN environment variable not set in production');
-  } else {
+  } else if (process.env.DEBUG_LOGS === 'true') {
     const parsedOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
     console.log('🔍 Parsed CORS origins:', parsedOrigins);
   }
@@ -165,20 +174,28 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
-      console.log(`🌐 CORS: Allowing request with no origin`);
+      if (process.env.DEBUG_LOGS === 'true') {
+        console.log(`🌐 CORS: Allowing request with no origin`);
+      }
       return callback(null, true);
     }
     
-    // Log CORS attempts for debugging
-    console.log(`🌐 CORS check for origin: ${origin}`);
-    console.log(`🌐 Allowed origins:`, allowedOrigins);
-    console.log(`🌐 CORS_ORIGIN env var:`, process.env.CORS_ORIGIN);
+    // Log CORS attempts for debugging (only when enabled)
+    if (process.env.DEBUG_LOGS === 'true') {
+      console.log(`🌐 CORS check for origin: ${origin}`);
+      console.log(`🌐 Allowed origins:`, allowedOrigins);
+      console.log(`🌐 CORS_ORIGIN env var:`, process.env.CORS_ORIGIN);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log(`✅ CORS allowed for: ${origin}`);
+      if (process.env.DEBUG_LOGS === 'true') {
+        console.log(`✅ CORS allowed for: ${origin}`);
+      }
       callback(null, true);
     } else {
-      console.log(`❌ CORS blocked for: ${origin}`);
+      if (process.env.DEBUG_LOGS === 'true') {
+        console.log(`❌ CORS blocked for: ${origin}`);
+      }
       // Return a more informative error
       const error = new Error(`Origin ${origin} not allowed by CORS policy`);
       error.status = 403;
@@ -204,6 +221,10 @@ app.use((err, req, res, next) => {
 
 // Enhanced logging configuration
 if (process.env.NODE_ENV === 'production') {
+  // Production monitoring and logging
+  app.use(performanceMonitoring);
+  app.use(productionLogging);
+  
   app.use(morgan('combined', {
     skip: (req, res) => res.statusCode < 400, // Only log errors in production
     stream: {
@@ -211,19 +232,21 @@ if (process.env.NODE_ENV === 'production') {
     }
   }));
   
-  // Add custom logging for proxy debugging
-  app.use((req, res, next) => {
-    if (req.path === '/health') {
-      console.log('🏥 Health check request:', {
-        ip: req.ip,
-        xForwardedFor: req.headers['x-forwarded-for'],
-        xRealIp: req.headers['x-real-ip'],
-        userAgent: req.get('User-Agent'),
-        timestamp: new Date().toISOString()
-      });
-    }
-    next();
-  });
+  // Optional verbose health check logging (disabled by default)
+  if (process.env.DEBUG_LOGS === 'true') {
+    app.use((req, res, next) => {
+      if (req.path === '/health') {
+        console.log('🏥 Health check request:', {
+          ip: req.ip,
+          xForwardedFor: req.headers['x-forwarded-for'],
+          xRealIp: req.headers['x-real-ip'],
+          userAgent: req.get('User-Agent'),
+          timestamp: new Date().toISOString()
+        });
+      }
+      next();
+    });
+  }
 } else {
   app.use(morgan('dev'));
 }
@@ -314,12 +337,19 @@ app.get('/health', async (req, res) => {
       schedulerStatus = { error: 'Scheduler not available' };
     }
 
+    // Get production metrics if in production
+    let metrics = null;
+    if (process.env.NODE_ENV === 'production') {
+      metrics = getHealthMetrics();
+    }
+
     res.json({
       status: 'OK',
       message: 'Fitflix Backend is running',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       scheduler: schedulerStatus,
+      metrics: metrics,
       cors: {
         allowedOrigins: allowedOrigins.length,
         production: process.env.NODE_ENV === 'production',
@@ -339,8 +369,10 @@ app.get('/health', async (req, res) => {
 
 // Request validation middleware
 app.use((req, res, next) => {
-  // Log all requests for debugging
-  console.log(`🌐 ${req.method} ${req.url} - Origin: ${req.get('Origin') || 'No Origin'}`);
+  // Optional per-request log (disabled in production by default)
+  if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+    console.log(`🌐 ${req.method} ${req.url} - Origin: ${req.get('Origin') || 'No Origin'}`);
+  }
   
   // Validate request size
   const contentLength = parseInt(req.headers['content-length'] || '0');
@@ -372,16 +404,20 @@ app.use('/api/auth', authRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/events', eventRoutes);
 
-// Debug: Log all registered routes
-console.log('🚀 Registered API Routes:');
-console.log('  - /api/auth/*');
-console.log('  - /api/blogs/*');
-console.log('  - /api/users/*');
-console.log('  - /api/leads/*');
-console.log('  - /health');
-console.log('  - /security-test');
-console.log('  - /test-routes');
+// Log routes only in development or when explicitly enabled
+if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+  console.log('🚀 Registered API Routes:');
+  console.log('  - /api/auth/*');
+  console.log('  - /api/blogs/*');
+  console.log('  - /api/users/*');
+  console.log('  - /api/leads/*');
+  console.log('  - /api/events/*');
+  console.log('  - /health');
+  console.log('  - /security-test');
+  console.log('  - /test-routes');
+}
 
 // Debug: Test route registration
 app.get('/test-routes', (req, res) => {
@@ -392,13 +428,15 @@ app.get('/test-routes', (req, res) => {
       '/api/blogs/*', 
       '/api/users/*',
       '/api/leads/*',
+      '/api/events/*',
       '/health'
     ],
     testUrls: [
       '/api/blogs/status/PUBLISHED',
       '/api/blogs',
       '/api/auth/login',
-      '/api/leads'
+      '/api/leads',
+      '/api/events/upcoming'
     ]
   });
 });
@@ -431,33 +469,45 @@ app.get('/security-test', (req, res) => {
   });
 });
 
+// Production metrics endpoint (only available in production)
+if (process.env.NODE_ENV === 'production') {
+  app.get('/metrics', (req, res) => {
+    try {
+      const metrics = getHealthMetrics();
+      res.json({
+        status: 'success',
+        data: metrics,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to retrieve metrics',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+}
+
 // 404 handler
 app.use('*', (req, res) => {
-  console.log(`❌ 404 - Route not found: ${req.method} ${req.url}`);
-  console.log(`🔍 Available routes: /api/auth/*, /api/blogs/*, /api/users/*, /api/leads/*, /health`);
+  console.warn(`❌ 404 - Route not found: ${req.method} ${req.url}`);
   
   res.status(404).json({
     success: false,
     message: 'Route not found',
     requestedUrl: req.url,
     method: req.method,
-    availableRoutes: ['/api/auth/*', '/api/blogs/*', '/api/users/*', '/api/leads/*', '/health']
+    availableRoutes: ['/api/auth/*', '/api/blogs/*', '/api/users/*', '/api/leads/*', '/api/events/*', '/health']
   });
 });
 
 // Global error handler
 app.use((error, req, res, next) => {
-  // Log error details
+  // Use production error monitoring
   if (process.env.NODE_ENV === 'production') {
-    console.error('Production error:', {
-      message: error.message,
-      stack: error.stack,
-      url: req.url,
-      method: req.method,
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      timestamp: new Date().toISOString()
-    });
+    errorMonitoring(error, req, res, next);
   } else {
     console.error('Development error:', error);
   }

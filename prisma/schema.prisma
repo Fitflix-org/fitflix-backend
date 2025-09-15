@@ -67,3 +67,52 @@ enum LeadStatus {
   CONVERTED
   LOST
 }
+
+model Event {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  title1      String?
+  title2      String?
+  title3      String?
+  description String
+  details     Json?
+  descriptionBlocks String[]   @default([])
+  coverImage  String?
+  imageUrls   String[]      @default([])
+  location    String?
+  date        DateTime      @db.Timestamptz(6)
+  entryFee    Decimal?      @db.Decimal(10, 2)
+  status      EventStatus   @default(DRAFT)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(6)
+  
+  // Relations
+  responses   EventResponse[]
+}
+
+model EventResponse {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId   String   @db.Uuid
+  name      String
+  phone     String
+  email     String
+  status    ResponseStatus @default(PENDING)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  
+  // Relations
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum ResponseStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}

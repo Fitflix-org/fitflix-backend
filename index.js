@@ -9,17 +9,23 @@ const PORT = process.env.PORT || 3000; // Use port from .env or default to 3000
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(`Access API at http://localhost:${PORT}/api`);
+  if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+    console.log(`Access API at http://localhost:${PORT}/api`);
+  }
   
   // Start the blog scheduler automatically
-  console.log('🚀 Starting blog scheduler...');
+  if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+    console.log('🚀 Starting blog scheduler...');
+  }
   blogScheduler.start();
   
   // Log scheduler status
   setTimeout(async () => {
     try {
-      const status = await blogScheduler.getStatus();
-      console.log('📅 Blog Scheduler Status:', status);
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+        const status = await blogScheduler.getStatus();
+        console.log('📅 Blog Scheduler Status:', status);
+      }
     } catch (error) {
       console.error('❌ Error getting scheduler status:', error);
     }

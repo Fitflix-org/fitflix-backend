@@ -149,9 +149,14 @@ const securityConfig = {
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    // Use SameSite=None in production by default to allow cross-site cookies
+    // (e.g., Admin Dashboard and Backend on different domains). Allow override via env.
+    sameSite: process.env.NODE_ENV === 'production'
+      ? (process.env.COOKIE_SAMESITE || 'none')
+      : (process.env.COOKIE_SAMESITE || 'lax'),
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    domain: process.env.NODE_ENV === 'production' ? '.fitflix.in' : undefined,
+    // Make cookie domain configurable; default to host-only cookie if not provided
+    domain: process.env.COOKIE_DOMAIN || undefined,
     path: '/',
     signed: true
   },

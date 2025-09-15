@@ -13,7 +13,12 @@ const createBlogSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
   excerpt: z.string().max(1000, 'Excerpt must be less than 1000 characters').optional(),
   content: z.string().min(1, 'Content is required'),
-  coverImage: z.string().url('Invalid cover image URL').optional(),
+  // Allow empty string to be treated as undefined for optional coverImage
+  coverImage: z
+    .string()
+    .transform((val) => (val === '' ? undefined : val))
+    .optional()
+    .refine((val) => (val === undefined ? true : /^https?:\/\//.test(val)), 'Invalid cover image URL'),
   status: blogStatusSchema.optional().default('DRAFT'),
   scheduledPublishAt: z.string().datetime('Invalid date format').optional(),
   metaTitle: z.string().max(120, 'Meta title must be less than 120 characters').optional(),

@@ -194,11 +194,9 @@ const updateLeadStatus = async (req, res) => {
     const { id } = req.params;
     const { status, notes } = req.body;
 
-    console.log('Backend: Updating lead status');
-    console.log('Lead ID:', id);
-    console.log('Request body:', req.body);
-    console.log('Status:', status);
-    console.log('Notes:', notes);
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+      console.log('Backend: Updating lead status', { id, hasNotes: !!notes, status });
+    }
 
     if (!status) {
       return res.status(400).json({
@@ -216,7 +214,9 @@ const updateLeadStatus = async (req, res) => {
       }
     });
 
-    console.log('Backend: Lead updated successfully:', lead);
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+      console.log('Backend: Lead updated successfully:', { id: lead.id, status: lead.status });
+    }
 
     res.json({
       success: true,

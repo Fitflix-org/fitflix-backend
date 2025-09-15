@@ -35,7 +35,9 @@
     "db:test:reset": "cross-env NODE_ENV=test npx prisma migrate reset --force",
     "db:generate": "npx prisma generate",
     "db:deploy": "prisma migrate deploy",
-    "db:seed:prod": "NODE_ENV=production node prisma/seed-admin.js"
+    "db:seed:prod": "NODE_ENV=production node prisma/seed-admin.js",
+    "db:seed:events": "node prisma/seed-events.js",
+    "db:update:event-date": "node prisma/update-event-date.js"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",

@@ -47,12 +47,16 @@ const requireAdmin = (req, res, next) => {
 // Login route
 router.post('/login', async (req, res) => {
   try {
-    console.log('🔐 Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+      console.log('🔐 Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
+    }
     
     const { email, password } = req.body;
 
     if (!email || !password) {
-      console.log('❌ Missing email or password');
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+        console.log('❌ Missing email or password');
+      }
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
@@ -61,31 +65,43 @@ router.post('/login', async (req, res) => {
       where: { email: email.toLowerCase() }
     });
 
-    console.log('👤 User found:', { 
-      found: !!user, 
-      email: user?.email, 
-      role: user?.role,
-      hasPassword: !!user?.password 
-    });
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+      console.log('👤 User found:', { 
+        found: !!user, 
+        email: user?.email, 
+        role: user?.role,
+        hasPassword: !!user?.password 
+      });
+    }
 
     if (!user) {
-      console.log('❌ User not found');
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+        console.log('❌ User not found');
+      }
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Check if user is admin
     if (user.role !== 'admin') {
-      console.log('❌ User is not admin, role:', user.role);
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+        console.log('❌ User is not admin, role:', user.role);
+      }
       return res.status(403).json({ message: 'Admin access required' });
     }
 
     // Verify password
-    console.log('🔑 Verifying password...');
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+      console.log('🔑 Verifying password...');
+    }
     const isValidPassword = await bcrypt.compare(password, user.password);
-    console.log('🔑 Password verification result:', isValidPassword);
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+      console.log('🔑 Password verification result:', isValidPassword);
+    }
     
     if (!isValidPassword) {
-      console.log('❌ Invalid password');
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
+        console.log('❌ Invalid password');
+      }
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -98,12 +114,11 @@ router.post('/login', async (req, res) => {
 
     // Set JWT as HTTP-only cookie with enhanced security
     res.cookie('admin_token', token, {
-      httpOnly: true,                    // Prevent XSS attacks
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'strict',               // CSRF protection
-      maxAge: 24 * 60 * 60 * 1000,     // 24 hours
-      path: '/',                        // Explicit path
-      domain: process.env.NODE_ENV === 'production' ? '.fitflix.in' : undefined // Subdomain support
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/'
     });
 
     // Return user info (without password)
@@ -128,9 +143,8 @@ router.post('/logout', (req, res) => {
   res.clearCookie('admin_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    domain: process.env.NODE_ENV === 'production' ? '.fitflix.in' : undefined
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/'
   });
   
   res.json({ 
