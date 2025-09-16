@@ -76,7 +76,8 @@ model Event {
   title3      String?
   description String
   details     Json?
-  descriptionBlocks String[]   @default([])
+  // Structured blocks as JSON (array) { title, description, items? }
+  descriptionBlocks Json? @map("descriptionBlocksRich")
   coverImage  String?
   imageUrls   String[]      @default([])
   location    String?
