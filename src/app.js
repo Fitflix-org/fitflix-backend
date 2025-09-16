@@ -142,8 +142,9 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       'https://fitflix.in' // Allow main domain
     ].filter(Boolean) // Remove undefined values
   : [
-      process.env.ADMIN_DASHBOARD_URL || 'http://localhost:5173',
+      process.env.ADMIN_DASHBOARD_URL || 'http://localhost:3001',
       process.env.WEBSITE_URL || 'http://localhost:8080',
+      'http://localhost:3001', // Admin Dashboard
       'http://localhost:5173', // Explicitly allow local Vite default
       'http://localhost:8080', // Explicitly allow local frontend
       'http://localhost:3000'  // Allow local backend

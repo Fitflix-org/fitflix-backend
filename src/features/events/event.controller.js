@@ -36,9 +36,10 @@ const getAllEvents = asyncHandler(async (req, res) => {
     }
   });
 
-  // Add response count to each event
+  // Add response count to each event and convert Decimal to number
   const eventsWithCounts = events.map(event => ({
     ...event,
+    entryFee: event.entryFee ? parseFloat(event.entryFee.toString()) : null,
     responseCount: event.responses.length,
     confirmedCount: event.responses.filter(r => r.status === 'CONFIRMED').length
   }));
@@ -140,7 +141,7 @@ const getUpcomingEvents = asyncHandler(async (req, res) => {
       title3: true,
       description: true,
       details: true,
-      descriptionBlocks: true,
+  descriptionBlocks: true,
       coverImage: true,
       imageUrls: true,
       location: true,
@@ -165,9 +166,11 @@ const getUpcomingEvents = asyncHandler(async (req, res) => {
 const createEvent = asyncHandler(async (req, res) => {
   const eventData = req.validatedData;
 
+  const { descriptionBlocks: blocks, descriptionBlocksRich, ...rest } = eventData;
   const event = await prisma.event.create({
     data: {
-      ...eventData,
+      ...rest,
+      descriptionBlocks: (blocks ?? descriptionBlocksRich) ?? undefined,
       date: new Date(eventData.date),
       entryFee: eventData.entryFee ? parseFloat(eventData.entryFee) : null
     }
@@ -192,6 +195,9 @@ const updateEvent = asyncHandler(async (req, res) => {
   }
   if (updateData.entryFee !== undefined) {
     processedData.entryFee = updateData.entryFee ? parseFloat(updateData.entryFee) : null;
+  }
+  if (updateData.descriptionBlocks !== undefined) {
+    processedData.descriptionBlocks = updateData.descriptionBlocks;
   }
 
   const updatedEvent = await prisma.event.update({

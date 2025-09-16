@@ -30,12 +30,12 @@ services:
         sync: false
       - key: ADMIN_DASHBOARD_URL
         value: "https://fitflix-admin-dashboard.onrender.com"
-      - key: WEBSITE_URL
-        value: "https://fitflix-website.onrender.com"
-      - key: FRONTEND_URL
-        value: "https://fitflix-website.onrender.com"
-      - key: CORS_ORIGIN
-        value: "https://fitflix-website.onrender.com,https://fitflix-admin-dashboard.onrender.com,https://fitflix.in"
+        - key: WEBSITE_URL
+          value: "https://fitflix-web.onrender.com"
+        - key: FRONTEND_URL
+          value: "https://fitflix-web.onrender.com"
+        - key: CORS_ORIGIN
+          value: "https://fitflix-web.onrender.com,https://fitflix-admin-dashboard.onrender.com,https://fitflix.in"
       - key: RATE_LIMIT_WINDOW_MS
         value: "900000"
       - key: RATE_LIMIT_MAX_REQUESTS

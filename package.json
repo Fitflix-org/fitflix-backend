@@ -37,6 +37,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed:prod": "NODE_ENV=production node prisma/seed-admin.js",
     "db:seed:events": "node prisma/seed-events.js",
+    "db:backfill:description-blocks": "node prisma/backfill-description-blocks.js",
     "db:update:event-date": "node prisma/update-event-date.js"
   },
   "dependencies": {

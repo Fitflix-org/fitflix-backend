@@ -9,6 +9,12 @@ const eventStatusSchema = z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED', 'COMPLETED'
 // Response status enum
 const responseStatusSchema = z.enum(['PENDING', 'CONFIRMED', 'CANCELLED']);
 
+// Block schemas
+const structuredBlockSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().min(1).max(2000)
+});
+
 // Create event validation schema
 const createEventSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
@@ -24,7 +30,26 @@ const createEventSchema = z.object({
       routeInfo: z.string().optional()
     })
     .optional(),
-  descriptionBlocks: z.array(z.string()).optional(),
+  // Unified structured blocks; allow array or JSON string; also allow legacy string[] and coerce
+  descriptionBlocks: z
+    .union([
+      z.array(structuredBlockSchema),
+      z.array(z.string()).transform((arr) => arr.map((s) => ({ description: s }))),
+      z.string().transform((val, ctx) => {
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed) && parsed.every((b) => typeof b === 'string')) {
+            return parsed.map((s) => ({ description: s }));
+          }
+          const arr = z.array(structuredBlockSchema).parse(parsed);
+          return arr;
+        } catch (e) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid JSON for descriptionBlocks' });
+          return z.NEVER;
+        }
+      })
+    ])
+    .optional(),
   // Allow empty string to be treated as undefined for optional coverImage
   coverImage: z
     .string()
