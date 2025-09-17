@@ -31,14 +31,16 @@ const os = require('os');
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Production clustering for better performance
-if (NODE_ENV === 'production' && cluster.isMaster) {
-  const numCPUs = os.cpus().length;
+// Memory-optimized mode: Disable clustering for low-RAM environments
+const ENABLE_CLUSTERING = process.env.ENABLE_CLUSTERING === 'true' && NODE_ENV === 'production';
+const MAX_MEMORY_MB = parseInt(process.env.MAX_MEMORY_MB || '512');
+
+// Disable clustering if memory is limited (< 1GB)
+if (ENABLE_CLUSTERING && MAX_MEMORY_MB >= 1024 && cluster.isMaster) {
+  const numCPUs = Math.min(os.cpus().length, Math.floor(MAX_MEMORY_MB / 256)); // 256MB per worker
   
-  if (process.env.DEBUG_LOGS === 'true') {
-    console.log(`🚀 Master process ${process.pid} is running`);
-    console.log(`📊 Spawning ${numCPUs} worker processes...`);
-  }
+  console.log(`🚀 Master process ${process.pid} is running`);
+  console.log(`📊 Memory limit: ${MAX_MEMORY_MB}MB - Spawning ${numCPUs} worker processes...`);
   
   // Fork workers
   for (let i = 0; i < numCPUs; i++) {
@@ -50,17 +52,21 @@ if (NODE_ENV === 'production' && cluster.isMaster) {
     cluster.fork();
   });
   
-  if (process.env.DEBUG_LOGS === 'true') {
-    cluster.on('online', (worker) => {
-      console.log(`✅ Worker ${worker.process.pid} is online`);
-    });
-  }
+  cluster.on('online', (worker) => {
+    console.log(`✅ Worker ${worker.process.pid} is online`);
+  });
   
 } else {
-  // Worker process or development mode
+  // Single process mode for low-memory environments or development
   const server = app.listen(PORT, () => {
     const workerInfo = cluster.isWorker ? ` (Worker ${process.pid})` : '';
+    const memoryUsage = process.memoryUsage();
+    const memoryMB = Math.round(memoryUsage.rss / 1024 / 1024);
+    
     console.log(`🚀 FitFlix Backend Server running on port ${PORT}${workerInfo}`);
+    console.log(`💾 Memory usage: ${memoryMB}MB RSS (Limit: ${MAX_MEMORY_MB}MB)`);
+    console.log(`🔧 Clustering: ${ENABLE_CLUSTERING ? 'Enabled' : 'Disabled (Memory Optimized)'}`);
+    
     if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_LOGS === 'true') {
       console.log(`🌍 Environment: ${NODE_ENV}`);
       console.log(`⏰ Started at: ${new Date().toISOString()}`);

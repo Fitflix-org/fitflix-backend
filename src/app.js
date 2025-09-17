@@ -366,6 +366,48 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Memory health check endpoint
+app.get('/health/memory', (req, res) => {
+  try {
+    const memoryUsage = process.memoryUsage();
+    const maxMemoryMB = parseInt(process.env.MAX_MEMORY_MB || '512');
+    const rssMemoryMB = Math.round(memoryUsage.rss / 1024 / 1024);
+    const heapUsedMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
+    const heapTotalMB = Math.round(memoryUsage.heapTotal / 1024 / 1024);
+    const externalMB = Math.round(memoryUsage.external / 1024 / 1024);
+    
+    const memoryStatus = rssMemoryMB > maxMemoryMB * 0.9 ? 'WARNING' : 
+                        rssMemoryMB > maxMemoryMB * 0.8 ? 'CAUTION' : 'OK';
+    
+    res.json({
+      status: memoryStatus,
+      memory: {
+        rss: rssMemoryMB,
+        heapUsed: heapUsedMB,
+        heapTotal: heapTotalMB,
+        external: externalMB,
+        limit: maxMemoryMB,
+        usage: Math.round((rssMemoryMB / maxMemoryMB) * 100),
+        available: maxMemoryMB - rssMemoryMB
+      },
+      clustering: {
+        enabled: process.env.ENABLE_CLUSTERING === 'true',
+        isWorker: require('cluster').isWorker,
+        workerId: process.pid
+      },
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Memory health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Request validation middleware
 app.use((req, res, next) => {
   // Optional per-request log (disabled in production by default)

@@ -27,6 +27,7 @@
     "test:security": "node scripts/test-security.js",
     "test:security:local": "node scripts/test-security.js http://localhost:3000",
     "test:security:prod": "node scripts/test-security.js https://fitflix-backend-avxt.onrender.com",
+    "test:memory": "node scripts/test-memory.js",
     "verify:deployment": "node scripts/verify-deployment.js",
     "verify:deployment:prod": "node scripts/verify-deployment.js https://fitflix-backend-avxt.onrender.com",
     "db:dev:migrate": "cross-env NODE_ENV=development npx prisma migrate dev",
