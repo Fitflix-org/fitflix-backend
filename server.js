@@ -1,8 +1,7 @@
-// Load environment variables first (only in development)
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-  console.log('📁 Loading .env file for development');
-}
+// Environment variables are loaded via package.json scripts
+// Production: uses .env via dotenv_config_path=.env
+// Development: uses .env.dev via dotenv_config_path=.env.dev
+console.log('📁 Environment loaded via script configuration');
 
 // Ensure NODE_ENV is set (fallback to production for safety)
 if (!process.env.NODE_ENV) {

@@ -4,10 +4,14 @@ services:
     runtime: node
     plan: starter
     buildCommand: npm run build:render
-    startCommand: npm start
+    startCommand: npm run start:memory-optimized
     healthCheckPath: /health
     autoDeploy: true
-    pullRequestPreviewsEnabled: true
+    pullRequestPreviewsEnabled: false
+    # Memory optimization settings
+    scaling:
+      minInstances: 1
+      maxInstances: 1
     disk:
       name: fitflix-backend-disk
       mountPath: /app/logs
