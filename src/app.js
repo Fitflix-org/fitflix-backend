@@ -296,7 +296,12 @@ app.use((req, res, next) => {
 });
 
 // Cookie parser with security options
-app.use(cookieParser(process.env.COOKIE_SECRET || 'default-secret'));
+// Require COOKIE_SECRET to be set in environment
+if (!process.env.COOKIE_SECRET) {
+  console.error('❌ COOKIE_SECRET environment variable is not set');
+  process.exit(1);
+}
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // Body parsing with security limits
 app.use(express.json({ 
